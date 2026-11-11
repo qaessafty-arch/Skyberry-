@@ -7,15 +7,24 @@ export const metadata = { title: "Universe" };
 
 export default async function UniversePage() {
   const { supabase, user } = await requireUser();
-  await supabase.rpc("ensure_universe");
-  const [{ data: spaces }, { data: pets }, { data: streaks }, { data: ms }, { data: settings }, { data: conns }] = await Promise.all([
+  const [first, { data: streaks }, { data: ms }, { data: settings }, { data: conns }] = await Promise.all([
+    Promise.all([
     supabase.from("universe_spaces").select("user_id, theme, planet"), // RLS: mine + my friends'
     supabase.from("pets").select("*"),                                  // RLS: mine + my friends'
+    ]),
     supabase.rpc("my_streaks"),
     supabase.from("milestones").select("key"),
     supabase.from("user_settings").select("reduce_motion").eq("user_id", user.id).single(),
     supabase.from("connections").select("requester_id, addressee_id").eq("status", "accepted"),
   ]);
+  let [{ data: spaces }, { data: pets }] = first;
+  if (!(pets ?? []).some((p) => p.owner_id === user.id)) {
+    // first visit: create the space + pet once, then read them back
+    await supabase.rpc("ensure_universe");
+    [{ data: spaces }, { data: pets }] = await Promise.all([
+      supabase.from("universe_spaces").select("user_id, theme, planet"), supabase.from("pets").select("*"),
+    ]);
+  }
   const friendIds = (conns ?? []).map((c) => (c.requester_id === user.id ? c.addressee_id : c.requester_id) as string);
   const people = await profilesById(supabase, friendIds);
   const allPets = (pets ?? []) as (Pet & { accessory?: string | null })[];
