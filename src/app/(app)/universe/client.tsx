@@ -36,6 +36,18 @@ function webglOk() {
   return glCache;
 }
 const qualityNow = () => (window.innerWidth < 768 || (navigator.hardwareConcurrency ?? 8) <= 4 ? "low" : "high");
+let softCache: boolean | undefined;
+/** True when WebGL runs on a CPU rasteriser (no GPU acceleration). */
+function softwareGl() {
+  if (softCache !== undefined) return softCache;
+  try {
+    const g = document.createElement("canvas").getContext("webgl2") ?? document.createElement("canvas").getContext("webgl");
+    const ext = g?.getExtension("WEBGL_debug_renderer_info");
+    const name = ext && g ? String(g.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : "";
+    softCache = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+  } catch { softCache = false; }
+  return softCache;
+}
 
 function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -60,6 +72,32 @@ export function UniverseClient({ space, pet, friends, earned, reduceMotion }: {
   const gl = useSyncExternalStore(() => () => undefined, webglOk, () => null);
   const osReduce = useSyncExternalStore(subscribeMotion, () => window.matchMedia("(prefers-reduced-motion: reduce)").matches, () => false);
   const quality = useSyncExternalStore(() => () => undefined, qualityNow, () => "low" as const);
+  const software = useSyncExternalStore(() => () => undefined, softwareGl, () => false);
+  const [paused, setPaused] = useState(false);
+  // Mount the 3D canvas only after the page has painted, so text and controls never wait on shader compilation.
+  const [stageReady, setStageReady] = useState(false);
+  useEffect(() => {
+    const go = () => setStageReady(true);
+    if (typeof window.requestIdleCallback === "function") { const id = window.requestIdleCallback(go, { timeout: 600 }); return () => window.cancelIdleCallback(id); }
+    const t = setTimeout(go, 120);
+    return () => clearTimeout(t);
+  }, []);
+  const stage = useRef<HTMLElement>(null);
+  useEffect(() => {
+    // Stop the 3D loop the moment the user navigates away, hides the tab or scrolls the scene off-screen.
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (a && a.origin === location.origin && !a.pathname.startsWith("/universe")) setPaused(true);
+    };
+    let visible = true, onScreen = true;
+    const sync = () => setPaused(!(visible && onScreen));
+    const onVis = () => { visible = document.visibilityState === "visible"; sync(); };
+    const io = new IntersectionObserver(([e]) => { onScreen = Boolean(e?.isIntersecting); sync(); });
+    if (stage.current) io.observe(stage.current);
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("visibilitychange", onVis);
+    return () => { io.disconnect(); document.removeEventListener("click", onClick, true); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
   const [reactKey, setReactKey] = useState(0);
   const [happyKey, setHappyKey] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -96,10 +134,10 @@ export function UniverseClient({ space, pet, friends, earned, reduceMotion }: {
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[1.65fr_1fr]">
-        <section aria-label="3D Universe" className="relative h-[min(64dvh,620px)] min-h-[360px] w-full min-w-0 overflow-hidden rounded-[28px] bg-space shadow-[var(--shadow-2)]">
-          {gl === null ? <div className="size-full bg-space" /> : gl ? (
+        <section ref={stage} aria-label="3D Universe" className="relative h-[min(64dvh,620px)] min-h-[360px] w-full min-w-0 overflow-hidden rounded-[28px] bg-space shadow-[var(--shadow-2)]">
+          {gl === null || (gl && !stageReady) ? <div className="grid size-full place-items-center bg-[radial-gradient(120%_90%_at_50%_100%,var(--space-3),var(--space)_70%)] text-[#cfe6f5]"><span className="flex items-center gap-2 text-sm font-semibold"><Spinner label="Loading Universe" />Waking Pip…</span></div> : gl ? (
             <Scene planet={space.planet} theme={space.theme} species={pet?.species ?? "berry-fox"} level={lp.level} mood={mood} accessory={accessory}
-              friends={friends} selectedFriend={selected} reduceMotion={still} quality={quality} reactKey={reactKey} happyKey={happyKey}
+              friends={friends} selectedFriend={selected} reduceMotion={still} quality={quality} software={software} paused={paused} reactKey={reactKey} happyKey={happyKey}
               onPickFriend={(f) => setSelected(f?.id ?? null)} onPetTap={() => setReactKey((k) => k + 1)} />
           ) : (
             <div className="grid size-full place-items-center bg-[radial-gradient(120%_90%_at_50%_100%,var(--space-3),var(--space)_70%)] p-8 text-center text-[#cfe6f5]">
