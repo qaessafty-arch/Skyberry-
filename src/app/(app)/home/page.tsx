@@ -21,14 +21,14 @@ const SHORTCUTS = [
 
 export default async function HomePage() {
   const { supabase, user, profile } = await requireUser();
-  await supabase.rpc("ensure_universe");
   const [{ data: convs }, { data: streaks }, { data: requests }, { data: pet }, { data: moments }] = await Promise.all([
     supabase.rpc("my_conversations"),
     supabase.rpc("my_streaks"),
     supabase.from("connections").select("id, requester_id, created_at").eq("addressee_id", user.id).eq("status", "pending"),
-    supabase.from("pets").select("name, xp, last_cared_at").eq("owner_id", user.id).single(),
+    supabase.from("pets").select("name, xp, last_cared_at").eq("owner_id", user.id).maybeSingle(),
     supabase.rpc("moment_feed"),
   ]);
+  if (!pet) void supabase.rpc("ensure_universe"); // first visit: create space + pet in the background
   const all = (convs ?? []) as ConversationRow[];
   const conversations = all.slice(0, 5);
   const unreadTotal = all.reduce((n, c) => n + Number(c.unread_count), 0);

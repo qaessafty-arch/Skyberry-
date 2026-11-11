@@ -4,13 +4,16 @@ import { BottomNav, SideNav, TopActions } from "@/components/nav";
 import { SetupNeeded } from "@/components/setup-needed";
 import { isSupabaseConfigured } from "@/lib/env";
 import { requireUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   if (!isSupabaseConfigured) return <SetupNeeded />;
-  const { supabase, user } = await requireUser();
-  const [{ count }, { data: settings }] = await Promise.all([
+  // Run independent queries in parallel with the auth check (RLS scopes them to the signed-in user).
+  const supabase = await createClient();
+  const [{ user }, { count }, { data: settings }] = await Promise.all([
+    requireUser(),
     supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null),
-    supabase.from("user_settings").select("reduce_motion").eq("user_id", user.id).single(),
+    supabase.from("user_settings").select("reduce_motion").maybeSingle(),
   ]);
   return (
     <div className="mx-auto flex w-full max-w-[1440px]" data-reduce-motion={settings?.reduce_motion ? "true" : undefined}>

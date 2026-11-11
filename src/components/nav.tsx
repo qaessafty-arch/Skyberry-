@@ -32,8 +32,23 @@ function NavIcon({ Icon, on, fillable, size = 22 }: { Icon: LucideIcon; on: bool
   return <Icon aria-hidden size={size} strokeWidth={on ? 2.3 : 1.9} fill={on && fillable ? "currentColor" : "none"} fillOpacity={on && fillable ? 0.16 : 0} />;
 }
 
+/** Warm the Universe's 3D bundle during idle time (no rendering, just the download). */
+function usePrefetchUniverse(path: string) {
+  useEffect(() => {
+    if (path.startsWith("/universe")) return;
+    const load = () => { void import("@/components/universe/scene"); };
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(load, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = setTimeout(load, 2500);
+    return () => clearTimeout(t);
+  }, [path]);
+}
+
 export function BottomNav() {
   const path = usePathname();
+  usePrefetchUniverse(path);
   return (
     <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(10px,env(safe-area-inset-bottom))] md:hidden">
       <ul className="glass mx-auto grid h-[var(--nav-h)] max-w-md grid-cols-5 items-center rounded-[22px] px-1.5">

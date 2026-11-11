@@ -15,10 +15,9 @@ export const metadata = { title: "Your profile" };
 
 export default async function ProfilePage() {
   const { supabase, user, profile } = await requireUser();
-  await supabase.rpc("ensure_universe");
   const [friends, { data: ms }, { data: pet }] = await Promise.all([
     friendsOf(supabase, user.id), supabase.from("milestones").select("key, achieved_at"),
-    supabase.from("pets").select("name, xp").eq("owner_id", user.id).single(),
+    supabase.from("pets").select("name, xp").eq("owner_id", user.id).maybeSingle(),
   ]);
   const banner = avatarUrl(profile.banner_path);
   const lp = levelProgress(pet?.xp ?? 0);
