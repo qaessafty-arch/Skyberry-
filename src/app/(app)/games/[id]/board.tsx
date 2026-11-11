@@ -55,13 +55,13 @@ export function Board({ initial, meId, names, invitedMe, isPlayer }: { initial: 
 
   return (
     <div className="mx-auto grid max-w-md gap-4">
-      <header><Link href="/games" className="text-sm font-bold text-berryt">← Games</Link><h1 className="text-3xl font-extrabold">Tic-Tac-Toe</h1>
+      <header><Link href="/games" className="text-sm font-bold text-brandt">← Games</Link><h1 className="text-[26px] font-extrabold leading-tight">Tic-Tac-Toe</h1>
         <p className="text-dim" role="status" aria-live="polite">{status}</p></header>
-      {!online && <p className="chip !text-sun" role="status">Reconnecting… your game is safe on the server.</p>}
-      <div role="grid" aria-label="Game board" className="card grid grid-cols-3 gap-2 p-3">
+      {!online && <p className="chip !text-warm" role="status">Reconnecting… your game is safe on the server.</p>}
+      <div role="grid" aria-label="Game board" className="card grid grid-cols-3 gap-2.5 p-3">
         {g.state.board.map((v, i) => (
           <button key={i} role="gridcell" disabled={busy || !myTurn || v !== ""} onClick={() => void play(i)} aria-label={`Cell ${i + 1}${v ? `, ${v}` : ", empty"}`}
-            className={`grid aspect-square place-items-center rounded-2xl bg-bg2 font-display text-5xl font-extrabold transition-colors enabled:hover:bg-surface2 ${line?.includes(i) ? "!bg-berry/30 ring-2 ring-berry" : ""} ${v === "X" ? "text-berryt" : "text-sky"}`}>{v}</button>
+            className={`grid aspect-square place-items-center rounded-[18px] border border-line bg-surface2 text-5xl font-extrabold transition-colors enabled:hover:border-sky enabled:hover:bg-white ${line?.includes(i) ? "!border-sky !bg-ice" : ""} ${v === "X" ? "text-brandt" : "text-[#4757c9]"}`}>{v}</button>
         ))}
       </div>
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}

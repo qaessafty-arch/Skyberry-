@@ -5,7 +5,7 @@ export function SetupNeeded() {
   return (
     <main className="mx-auto grid min-h-dvh max-w-xl place-content-center gap-4 px-6 py-16">
       <Wordmark />
-      <h1 className="text-3xl font-extrabold">Connect a Supabase project to begin</h1>
+      <h1 className="text-[26px] font-extrabold leading-tight">Connect a Supabase project to begin</h1>
       <p className="text-dim">
         Skyberry stores accounts, chats and media in Supabase. No project is configured for this environment yet.
       </p>

@@ -18,7 +18,7 @@ export function NewChatForms({ friends }: { friends: F[] }) {
         <h2 id="dm" className="mb-3 text-lg font-bold">Message a friend</h2>
         {err && <ErrorNote>{err}</ErrorNote>}
         {friends.length === 0 ? (
-          <p className="text-sm text-dim">You haven&apos;t connected with anyone yet. <Link href="/search" className="font-bold text-berryt">Find people</Link> to message.</p>
+          <p className="text-sm text-dim">You haven&apos;t connected with anyone yet. <Link href="/search" className="font-bold text-brandt">Find people</Link> to message.</p>
         ) : (
           <ul className="grid gap-1">
             {friends.map((f) => (
@@ -45,7 +45,7 @@ export function NewChatForms({ friends }: { friends: F[] }) {
             <legend className="label">Invite friends</legend>
             {friends.map((f) => (
               <label key={f.id} className="flex min-h-11 items-center gap-3 rounded-xl px-2 hover:bg-surface2">
-                <input type="checkbox" name="invitee" value={f.id} className="size-5 accent-[var(--berry)]" />
+                <input type="checkbox" name="invitee" value={f.id} className="size-5 accent-[var(--brand)]" />
                 <Avatar name={f.name} path={f.avatar} accent={f.accent} size={32} />{f.name}
               </label>
             ))}

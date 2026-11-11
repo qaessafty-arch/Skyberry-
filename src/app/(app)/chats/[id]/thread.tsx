@@ -27,6 +27,7 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
   const [typing, setTyping] = useState<Record<string, number>>({});
   const [text, setText] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(initial.length >= 50);
@@ -155,39 +156,39 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
   const canModerate = (m: Message) => m.sender_id === meId || (kind !== "direct" && (RANK[myRole] ?? 0) >= 2 && (RANK[myRole] ?? 0) > (RANK[members[m.sender_id ?? ""]?.role ?? "member"] ?? 1));
 
   return (
-    <section aria-label="Conversation" className="card flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex-1 space-y-2 overflow-y-auto p-4" role="log" aria-live="polite" aria-relevant="additions">
+    <section aria-label="Conversation" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex-1 space-y-1.5 overflow-y-auto px-1 py-3" role="log" aria-live="polite" aria-relevant="additions">
         {hasMore && <button className="btn btn-ghost btn-sm mx-auto flex" onClick={loadEarlier} disabled={loadingMore}>{loadingMore ? <Spinner /> : "Load earlier messages"}</button>}
         {messages.length === 0 && pending.length === 0 && <p className="py-10 text-center text-dim">No messages yet. Say hello!</p>}
         {messages.map((m) => {
-          if (m.kind === "system") return <p key={m.id} className="py-1 text-center text-xs text-faint">{m.body}</p>;
+          if (m.kind === "system") return <p key={m.id} className="py-2 text-center"><span className="chip">{m.body}</span></p>;
           const mine = m.sender_id === meId;
           const who = members[m.sender_id ?? ""];
           const mi = m.media_id ? media[m.media_id] : undefined;
           return (
             <div key={m.id} className={`group flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}>
               {!mine && <Avatar name={who?.name ?? "Former member"} path={who?.avatar} accent={who?.accent} size={28} />}
-              <div className={`max-w-[78%] rounded-3xl px-4 py-2 ${mine ? "rounded-br-lg bg-berry text-white" : "rounded-bl-lg bg-surface2"}`}>
-                {!mine && kind !== "direct" && <p className="text-xs font-bold text-berryt">{who?.name ?? "Former member"}</p>}
+              <div onClick={() => setSelected((cur) => (cur === m.id ? null : m.id))} className={`max-w-[80%] cursor-default px-3.5 py-2 text-[15px] leading-[1.45] ${mine ? "rounded-[20px] rounded-br-[6px] bg-brand text-white shadow-[0_4px_12px_-8px_rgba(26,120,180,.7)]" : "rounded-[20px] rounded-bl-[6px] border border-line bg-white shadow-[var(--shadow-1)]"}`}>
+                {!mine && kind !== "direct" && <p className="mb-0.5 text-xs font-bold text-brandt">{who?.name ?? "Former member"}</p>}
                 {m.deleted_at ? <p className="italic opacity-70">Message deleted</p> : (
                   <>
                     {m.kind !== "text" && (mi ? (mi.kind === "image"
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={mi.url} alt="Shared photo" className="mb-1 max-h-72 rounded-2xl" loading="lazy" />
-                      : <video src={mi.url} controls preload="metadata" className="mb-1 max-h-72 rounded-2xl" />) : <p className="skeleton h-24 w-40" aria-label="Loading media" />)}
+                      ? <img src={mi.url} alt="Shared photo" className="mb-1 max-h-72 w-full max-w-[280px] rounded-[14px] object-cover" loading="lazy" />
+                      : <video src={mi.url} controls preload="metadata" className="mb-1 max-h-72 max-w-[280px] rounded-[14px]" />) : <p className="skeleton h-24 w-40" aria-label="Loading media" />)}
                     {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
                   </>
                 )}
-                <p className={`mt-0.5 flex items-center justify-end gap-1 text-[11px] ${mine ? "text-white/80" : "text-faint"}`}>
+                <p className={`mt-0.5 flex items-center justify-end gap-1 text-[11px] ${mine ? "text-white/85" : "text-faint"}`}>
                   {timeAgo(m.created_at)}{m.edited_at && !m.deleted_at ? " · edited" : ""}
                   {mine && !m.deleted_at && (seenBy(m) ? <CheckCheck aria-label="Seen" size={13} /> : <Check aria-label="Sent" size={13} />)}
                 </p>
               </div>
               {!m.deleted_at && (
-                <span className="flex opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 max-md:opacity-100">
-                  <button className="btn btn-ghost size-9 !p-0" aria-label="Save message" onClick={() => void saveItem("message", m.id)}><Star aria-hidden size={15} /></button>
-                  {mine && m.kind === "text" && <button className="btn btn-ghost size-9 !p-0" aria-label="Edit message" onClick={() => { setEditing(m.id); setText(m.body ?? ""); }}><Pencil aria-hidden size={15} /></button>}
-                  {canModerate(m) && <button className="btn btn-ghost size-9 !p-0" aria-label="Delete message" onClick={() => { if (window.confirm("Delete this message for everyone?")) void moderateDelete(m.id); }}><Trash2 aria-hidden size={15} /></button>}
+                <span className={`flex transition-opacity focus-within:opacity-100 md:group-hover:opacity-100 ${selected === m.id ? "opacity-100" : "opacity-0 max-md:pointer-events-none"}`}>
+                  <button className="icon-btn !size-9" aria-label="Save message" onClick={() => void saveItem("message", m.id)}><Star aria-hidden size={15} /></button>
+                  {mine && m.kind === "text" && <button className="icon-btn !size-9" aria-label="Edit message" onClick={() => { setEditing(m.id); setText(m.body ?? ""); }}><Pencil aria-hidden size={15} /></button>}
+                  {canModerate(m) && <button className="icon-btn !size-9" aria-label="Delete message" onClick={() => { if (window.confirm("Delete this message for everyone?")) void moderateDelete(m.id); }}><Trash2 aria-hidden size={15} /></button>}
                 </span>
               )}
             </div>
@@ -195,7 +196,7 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
         })}
         {pending.map((p) => (
           <div key={p.tempId} className="flex flex-row-reverse">
-            <div className={`max-w-[78%] rounded-3xl rounded-br-lg bg-berry/60 px-4 py-2 text-white ${p.failed ? "ring-2 ring-danger" : ""}`}>
+            <div className={`max-w-[80%] rounded-[20px] rounded-br-[6px] bg-brand/70 px-3.5 py-2 text-white ${p.failed ? "ring-2 ring-danger" : ""}`}>
               <p className="whitespace-pre-wrap break-words">{p.body}</p>
               <p className="text-right text-[11px]">{p.failed ? <button className="underline" onClick={() => void send(p.body, p.tempId)}>Retry</button> : "Sending…"}</p>
             </div>
@@ -203,18 +204,18 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
         ))}
         <div ref={bottom} />
       </div>
-      <div className="h-5 px-4 text-xs text-dim" aria-live="polite">{typers.length > 0 && `${typers.map((t) => t.name).join(", ")} ${typers.length > 1 ? "are" : "is"} typing…`}</div>
+      <div className="h-5 px-3 text-xs font-semibold text-brandt" aria-live="polite">{typers.length > 0 && `${typers.map((t) => t.name).join(", ")} ${typers.length > 1 ? "are" : "is"} typing…`}</div>
       {error && <p role="alert" className="px-4 pb-1 text-sm text-danger">{error}</p>}
-      {uploadPct !== null && <div className="mx-4 mb-2 h-1.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={uploadPct} aria-valuemin={0} aria-valuemax={100} aria-label="Upload progress"><div className="h-full bg-berry transition-all" style={{ width: `${uploadPct}%` }} /></div>}
-      <form onSubmit={submit} className="flex items-end gap-2 border-t border-line p-3">
+      {uploadPct !== null && <div className="mx-2 mb-2 h-1.5 overflow-hidden rounded-full bg-ice" role="progressbar" aria-valuenow={uploadPct} aria-valuemin={0} aria-valuemax={100} aria-label="Upload progress"><div className="h-full bg-sky transition-all" style={{ width: `${uploadPct}%` }} /></div>}
+      <form onSubmit={submit} className="glass flex items-end gap-1.5 rounded-[22px] p-1.5">
         <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" className="sr-only" id="chat-file" onChange={(e) => void onFile(e.target.files?.[0])} />
-        <label htmlFor="chat-file" className="btn btn-ghost size-11 cursor-pointer !p-0" aria-label="Attach photo or video"><ImagePlus aria-hidden size={20} /></label>
+        <label htmlFor="chat-file" className="icon-btn shrink-0 cursor-pointer" aria-label="Attach photo or video"><ImagePlus aria-hidden size={21} strokeWidth={1.9} /></label>
         <label htmlFor="msg" className="sr-only">Message</label>
         <textarea id="msg" value={text} onChange={(e) => onType(e.target.value)} rows={1} maxLength={4000} placeholder={editing ? "Edit your message" : "Write a message"}
-          className="field max-h-32 min-h-11 flex-1 resize-none !rounded-3xl"
+          className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1 py-2.5 text-[15px] text-ink outline-none placeholder:text-faint"
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} />
         {editing && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEditing(null); setText(""); }}>Cancel</button>}
-        <button type="submit" className="btn btn-primary size-11 !p-0" aria-label={editing ? "Save edit" : "Send message"} disabled={!text.trim()}><Send aria-hidden size={18} /></button>
+        <button type="submit" className="btn btn-primary size-11 shrink-0 !rounded-[15px] !p-0" aria-label={editing ? "Save edit" : "Send message"} disabled={!text.trim()}><Send aria-hidden size={18} /></button>
       </form>
     </section>
   );

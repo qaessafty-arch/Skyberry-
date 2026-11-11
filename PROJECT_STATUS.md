@@ -6,9 +6,18 @@ _Last updated: 2026-11-04 · Phases 0–9 attempted in one pass; honest status b
 
 Skyberry runs end-to-end against a **live Supabase project** (`Skyberry`, ref `acspwxeksjzvgrttkuav`, region ap-south-1, created on a second Supabase account because the first hit the free-plan limit). All 8 migrations are applied; the security advisor reports only intended items. A two-user, phone-sized (390×844) browser run passes **25/25** steps with **0 console errors**, twice in a row on fresh accounts.
 
+## UI/UX & identity transformation (2026-11-12)
+
+- New sky-blue design system (tokens, Manrope, restrained glass, AA-checked colour pairs): `docs/DESIGN_SYSTEM.md`.
+- Every screen moved onto it: landing, auth, Home, Chats + conversation (glass header/composer, tap-to-reveal message actions), rooms, games, camera/Moments, gallery, saved, search, notifications (categorised, grouped by recency), settings (grouped rows with icons), profile + public profile. Pink/magenta identity fully removed; no emoji in the interface.
+- Navigation: glass bottom bar with filled active states and a modest camera tile; desktop sidebar with grouped destinations and a live notification count.
+- Universe rebuilt: generated planets (seamless noise surfaces, clouds, atmosphere), sky themes, soft shadows, rim lighting, friends' real planet styles, Customize/Details sheets, WebGL and reduced-motion fallbacks.
+- Pip rebuilt as a full-body procedural cloud fox with shell fur, detailed eyes and a behaviour system (idle/attention/happy/sleepy/react); level growth and level-locked accessories (migration 0009, enforced in the database). Existing XP/levels untouched. **Honest limit:** this is a high-quality real-time procedural character, not an artist-sculpted semi-realistic model; `docs/PET_PIPELINE.md` explains how an authored GLB replaces it with no code changes.
+- Verified: typecheck, lint, unit, DB (incl. accessory rules), public E2E, live two-user phone run 26/26 with 0 console errors, desktop pages with no horizontal overflow, and screenshot review of every major screen plus Pip in each mood.
+
 ## Remaining blockers / to do by you
 
-- **Revoke the Supabase access token** used for setup (Account → Access Tokens): it was pasted into the chat transcript.
+- **Revoke the Supabase access token** used for setup (Account → Access Tokens): it was pasted into the chat transcript and is still active.
 - 10 leftover test image files in Storage → `media` (from deleted test accounts) can be removed from the dashboard.
 - Optional cleanup in the first account: the empty, paused project `skyberry` (`hqopvsszghnlvqcxcgzj`); `ocean` was paused on 2026-11-04 to free a slot and can be resumed.
 - Not yet verified: real phones (camera capture, 3D performance, iOS Safari), screen-reader audit, deployment to a public URL.

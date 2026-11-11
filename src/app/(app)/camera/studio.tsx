@@ -22,9 +22,9 @@ export function CameraStudio({ meId, moments, friends, initialTab, focusAuthor, 
   const [tab, setTab] = useState(initialTab);
   return (
     <div className="mx-auto max-w-3xl">
-      <div role="tablist" aria-label="Camera sections" className="mb-4 flex gap-2">
+      <div role="tablist" aria-label="Camera sections" className="glass mx-auto mb-5 grid w-full max-w-xs grid-cols-2 gap-1 rounded-[16px] p-1">
         {(["capture", "moments"] as const).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`btn btn-sm ${tab === t ? "btn-primary" : "btn-soft"}`}>
+          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`btn btn-sm !rounded-[12px] ${tab === t ? "bg-white text-brandt shadow-[var(--shadow-1)]" : "text-dim hover:text-ink"}`}>
             {t === "capture" ? "Capture" : `Moments${moments.length ? ` (${moments.length})` : ""}`}
           </button>
         ))}
@@ -123,7 +123,7 @@ function Capture({ friends, onShared }: { friends: { id: string; name: string }[
   return (
     <section aria-label="Capture a Moment" className="grid gap-4">
       {!shot ? (
-        <div className="card relative mx-auto aspect-[3/4] w-full max-w-md overflow-hidden bg-black">
+        <div className="relative mx-auto aspect-[3/4] w-full max-w-md overflow-hidden rounded-[28px] bg-[linear-gradient(170deg,var(--space-3),var(--space))] shadow-[var(--shadow-2)]">
           <video ref={video} playsInline muted aria-label="Camera preview" className={`size-full object-cover ${facing === "user" ? "-scale-x-100" : ""} ${cam === "live" ? "" : "invisible"}`} />
           {cam !== "live" && (
             <div className="absolute inset-0 grid place-content-center justify-items-center gap-3 p-6 text-center text-white">
@@ -134,16 +134,16 @@ function Capture({ friends, onShared }: { friends: { id: string; name: string }[
                   : cam === "error" ? "The camera couldn't start. Close other apps using it and try again, or upload instead."
                   : "Take a photo or short video to share a Moment with your friends."}
               </p>
-              {cam !== "starting" && cam !== "unsupported" && <button className="btn btn-primary" onClick={() => void start(facing)}>{fallback ? "Try again" : "Turn on camera"}</button>}
+              {cam !== "starting" && cam !== "unsupported" && <button className="btn bg-white text-ink hover:bg-ice" onClick={() => void start(facing)}>{fallback ? "Try again" : "Turn on camera"}</button>}
             </div>
           )}
           {cam === "live" && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-around bg-gradient-to-t from-black/70 to-transparent p-5">
-              <button className="btn size-12 bg-white/20 !p-0 text-white" aria-label="Switch camera" onClick={() => { const f = facing === "user" ? "environment" : "user"; setFacing(f); void start(f); }}><FlipHorizontal2 aria-hidden /></button>
+              <button className="glass-dark grid size-12 place-items-center rounded-full" aria-label="Switch camera" onClick={() => { const f = facing === "user" ? "environment" : "user"; setFacing(f); void start(f); }}><FlipHorizontal2 aria-hidden /></button>
               <button className="grid size-[72px] place-items-center rounded-full border-4 border-white" aria-label={recording ? "Stop recording" : "Take photo"} onClick={recording ? toggleRecord : snap}>
                 <span className={`block ${recording ? "size-7 rounded-md" : "size-14 rounded-full"} bg-white`} />
               </button>
-              <button className={`btn size-12 !p-0 text-white ${recording ? "bg-danger" : "bg-white/20"}`} disabled={!canRecord} aria-label={recording ? "Stop recording" : "Record video"} aria-pressed={recording} onClick={toggleRecord}>
+              <button className={`grid size-12 place-items-center rounded-full text-white disabled:opacity-40 ${recording ? "bg-danger" : "glass-dark"}`} disabled={!canRecord} aria-label={recording ? "Stop recording" : "Record video"} aria-pressed={recording} onClick={toggleRecord}>
                 {recording ? <Square aria-hidden size={18} /> : <Circle aria-hidden size={18} />}
               </button>
             </div>
@@ -171,11 +171,11 @@ function Capture({ friends, onShared }: { friends: { id: string; name: string }[
           {audience === "selected" && (
             <fieldset className="grid gap-1"><legend className="label">Choose people</legend>
               {friends.length === 0 ? <p className="text-sm text-dim">Connect with friends first.</p> : friends.map((f) => (
-                <label key={f.id} className="flex min-h-11 items-center gap-3"><input type="checkbox" className="size-5 accent-[var(--berry)]" checked={selected.includes(f.id)}
+                <label key={f.id} className="flex min-h-11 items-center gap-3"><input type="checkbox" className="size-5 accent-[var(--brand)]" checked={selected.includes(f.id)}
                   onChange={(e) => setSelected((s) => (e.target.checked ? [...s, f.id] : s.filter((x) => x !== f.id)))} />{f.name}</label>))}
             </fieldset>
           )}
-          {pct !== null && <div role="progressbar" aria-label="Upload progress" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} className="h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-berry transition-all" style={{ width: `${pct}%` }} /></div>}
+          {pct !== null && <div role="progressbar" aria-label="Upload progress" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} className="h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-brand transition-all" style={{ width: `${pct}%` }} /></div>}
           <div className="flex gap-2">
             <button className="btn btn-soft" onClick={retake} disabled={pct !== null}><RotateCcw aria-hidden size={16} />Retake</button>
             <button className="btn btn-primary flex-1" onClick={() => void share()} disabled={pct !== null}>{pct !== null ? <Spinner label="Uploading" /> : <Send aria-hidden size={16} />}{error && pct === null ? "Retry share" : "Share Moment"}</button>
@@ -215,7 +215,7 @@ function MomentsView({ moments, meId, focusAuthor, focusMoment }: { moments: Mom
         {groups.map((g) => { const f = g[0]!; return (
           <li key={f.authorId}>
             <button className="flex w-full flex-col items-center gap-2 rounded-2xl p-2 hover:bg-surface2" onClick={() => setOpen({ group: g, index: 0 })}>
-              <span className={`rounded-full p-[3px] ${g.every((i) => i.viewed) || f.mine ? "bg-line" : "bg-gradient-to-br from-[#ff7fb0] to-[#6cc8ff]"}`}><Avatar name={f.authorName} path={f.authorAvatar} accent={f.accent} size={64} className="ring-2 ring-bg" /></span>
+              <span className={`rounded-full p-[3px] ${g.every((i) => i.viewed) || f.mine ? "bg-line" : "bg-gradient-to-br from-[var(--sky-bright)] to-[var(--sky-deep)]"}`}><Avatar name={f.authorName} path={f.authorAvatar} accent={f.accent} size={64} className="ring-2 ring-white" /></span>
               <span className="max-w-full truncate text-xs font-bold">{f.mine ? "Your Moments" : f.authorName}</span><span className="text-[11px] text-faint">{g.length} · {timeLeft(g[g.length - 1]!.expiresAt)}</span>
             </button>
           </li>); })}

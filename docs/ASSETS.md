@@ -1,8 +1,8 @@
 # Assets & licensing
 
-* **3D**: the Universe scene (planet, orbiting friend orbs, pet creatures) is built from procedural Three.js primitives written for this project — no external models or textures, so there is nothing to license or attribute. Low polygon counts, `powerPreference: low-power`, DPR capped at 1.75, frame loop paused (`demand`) under reduced motion, WebGL-less fallback list.
-* **Fonts**: Bricolage Grotesque and Figtree via `@fontsource-variable/*` (SIL Open Font License 1.1), self-hosted by the bundler.
+* **3D**: everything in the Universe is generated in code for this project: Pip (sculpted procedural surfaces + shell fur), planets (seamless 3D-noise textures, cloud layer, fresnel atmosphere), sky dome and lighting (local Lightformers, no HDR downloads). No external models or textures, so nothing to license. Performance: shell count and texture resolution drop on phones/low-core devices, DPR capped (1.3 low / 1.75 high), frame loop on demand under reduced motion, WebGL-less fallback. See `docs/PET_PIPELINE.md` for replacing Pip with an authored GLB.
+* **Font**: Manrope via `@fontsource-variable/manrope` (SIL Open Font License 1.1), self-hosted by the bundler.
 * **Icons**: `lucide-react` (ISC).
-* **Logo**: original SVG in `src/components/logo.tsx`.
+* **Logo**: original SVG sky berry in `src/components/logo.tsx` and `src/app/icon.svg`.
 
 If external GLB models are added later, store optimized copies in `public/models`, record source + license here, and never hotlink.

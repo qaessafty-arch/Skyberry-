@@ -11,7 +11,7 @@ function LoginForm() {
   const params = useSearchParams();
   return (
     <form action={action} className="grid gap-4" noValidate>
-      <h1 className="text-3xl font-extrabold">Welcome back</h1>
+      <h1 className="text-[26px] font-extrabold leading-tight">Welcome back</h1>
       {params.get("error") === "link" && <ErrorNote>That link expired or was already used. Request a new one.</ErrorNote>}
       {state.error && <ErrorNote>{state.error}</ErrorNote>}
       <input type="hidden" name="next" value={params.get("next") ?? ""} />
@@ -19,8 +19,8 @@ function LoginForm() {
       <Field label="Password" name="password" type="password" autoComplete="current-password" required error={state.fieldErrors?.password} />
       <Submit>Log in</Submit>
       <p className="text-sm text-dim">
-        <Link className="text-berryt underline" href="/forgot-password">Forgot password?</Link> · New here?{" "}
-        <Link className="text-berryt underline" href="/register">Create an account</Link>
+        <Link className="text-brandt underline" href="/forgot-password">Forgot password?</Link> · New here?{" "}
+        <Link className="text-brandt underline" href="/register">Create an account</Link>
       </p>
     </form>
   );

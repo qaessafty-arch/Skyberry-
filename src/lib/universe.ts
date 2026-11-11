@@ -9,7 +9,7 @@ export function levelProgress(xp: number) {
 }
 /** Gentle, never-punishing mood derived from the last care time. */
 export function petMood(lastCaredAt: string | null, now = Date.now()): "glowing" | "content" | "sleepy" {
-  if (!lastCaredAt) return "sleepy";
+  if (!lastCaredAt) return "content"; // a new companion starts awake and curious
   const hours = (now - new Date(lastCaredAt).getTime()) / 36e5;
   return hours < 8 ? "glowing" : hours < 24 ? "content" : "sleepy";
 }
@@ -22,3 +22,12 @@ export const MILESTONES: Record<string, { label: string; hint: string }> = {
   pet_level_5: { label: "Bonded", hint: "Raise your pet to level 5" },
   first_win: { label: "Good game", hint: "Win a game" },
 };
+
+/** Cosmetics unlocked by pet level (mirrors private.accessory_unlock_level in migration 0009). */
+export const ACCESSORIES = [
+  { key: "cloud_scarf", label: "Cloud scarf", unlock: 3, description: "A soft sky-blue scarf." },
+  { key: "star_charm", label: "Star charm", unlock: 5, description: "A small glowing crystal on a fine collar." },
+] as const;
+export type AccessoryKey = (typeof ACCESSORIES)[number]["key"];
+export const PLANET_LABELS: Record<string, string> = { berry: "Glacier", lagoon: "Lagoon", ember: "Dune", meadow: "Meadow" };
+export const SKY_LABELS: Record<string, string> = { dusk: "Twilight", dawn: "Daybreak", aurora: "Aurora", midnight: "Midnight" };

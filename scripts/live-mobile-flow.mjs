@@ -96,10 +96,11 @@ await step("alice shares a Moment via upload; bob sees it", async () => {
   await B.goto(BASE + "/camera?tab=moments"); await B.getByText("Alice Sky").first().click(); await B.getByText("Hello sky").waitFor({ timeout: 10000 });
   await shot(B, "17-moment-view");
 });
-await step("universe renders (3D or fallback)", async () => { await A.goto(BASE + "/universe"); await A.getByText("Your Universe").waitFor(); await A.waitForTimeout(2500); await shot(A, "18-universe"); });
-await step("care for pet persists XP", async () => { await A.getByRole("button", { name: /Care for/ }).click(); await A.waitForTimeout(2000); await A.reload(); await A.getByText(/XP/).first().waitFor(); });
+await step("universe renders (3D or fallback)", async () => { await A.goto(BASE + "/universe"); await A.getByRole("heading", { name: /sky$/ }).first().waitFor(); await A.waitForTimeout(4000); await shot(A, "18-universe"); });
+await step("interact with Pip and open Customize", async () => { await A.getByRole("button", { name: "Interact" }).click(); await A.waitForTimeout(600); await shot(A, "18b-universe-interact"); await A.getByRole("button", { name: "Customize" }).click(); await A.getByText("Accessory").waitFor(); await shot(A, "18c-customize"); await A.getByRole("button", { name: "Close" }).first().click(); });
+await step("care for pet persists XP", async () => { await A.getByRole("button", { name: "Care", exact: true }).click(); await A.getByRole("status").filter({ hasText: "+5 XP" }).waitFor({ timeout: 10000 }); await A.reload(); await A.getByText(/XP ·/).first().waitFor(); });
 await step("save a message, see it in Saved", async () => {
-  await B.goto(chatUrl); await B.getByRole("button", { name: "Save message" }).first().click(); await B.waitForTimeout(1200);
+  await B.goto(chatUrl); await B.getByText("Hi Bob, testing Skyberry on mobile").click(); await B.getByRole("button", { name: "Save message" }).first().click(); await B.waitForTimeout(1200);
   await B.goto(BASE + "/saved"); await B.getByText("Hi Bob, testing Skyberry on mobile").waitFor({ timeout: 10000 }); await shot(B, "19-saved");
 });
 await step("notifications list", async () => { await B.goto(BASE + "/notifications"); await B.getByRole("heading", { name: "Notifications" }).waitFor(); await shot(B, "20-notifications"); });

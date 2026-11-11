@@ -348,6 +348,17 @@ select t.eq('game invite notification', t.count($$select 1 from notifications wh
 select t.as(:alice::uuid);
 select t.throws('message flood is rate limited', format($f$do $x$ begin for i in 1..40 loop insert into messages (conversation_id, sender_id, body) values (%L, %L, 'spam ' || i); end loop; end $x$$f$, :'c_ab', :alice));
 
+-- ── pet accessories ────────────────────────────────────────────────────────
+select t.as(:bob::uuid);
+select ensure_universe();
+select t.throws('cannot wear a locked accessory', format('update pets set accessory = ''star_charm'' where owner_id = %L', :bob));
+select t.admin(); update pets set xp = 400 where owner_id = :bob;  -- level 5
+select t.as(:bob::uuid);
+update pets set accessory = 'star_charm' where owner_id = :bob;
+select t.eq('unlocked accessory can be worn', (select accessory from pets where owner_id = :bob), 'star_charm');
+select t.throws('unknown accessory rejected', format('update pets set accessory = ''crown'' where owner_id = %L', :bob));
+select t.eq('cannot dress someone else''s pet', t.affected(format('update pets set accessory = null where owner_id = %L', :alice)), 0::bigint);
+
 -- ── membership lifecycle (account deletion) ────────────────────────────────
 select t.admin();
 select create_conversation('room', 'Lifecycle Room', '', 'public') as lr from (select t.as(:carol::uuid)) x \gset

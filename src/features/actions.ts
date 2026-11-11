@@ -186,6 +186,17 @@ export async function renamePet(name: string) {
   revalidatePath("/universe");
   return { ok: true } as Result;
 }
+export async function setAccessory(accessory: string | null) {
+  const supabase = await createClient();
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return { ok: false, error: "Please log in" } as Result;
+  const a = z.enum(["cloud_scarf", "star_charm"]).nullable().safeParse(accessory);
+  if (!a.success) return { ok: false, error: "Unknown accessory" } as Result;
+  const { error } = await supabase.from("pets").update({ accessory: a.data }).eq("owner_id", u.user.id);
+  if (error) return { ok: false, error: /Reach level/.test(error.message) ? error.message : "Couldn't update the accessory." } as Result;
+  revalidatePath("/universe");
+  return { ok: true } as Result;
+}
 export async function startGame(friendId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_game", { p_kind: "tictactoe", p_invitee: id(friendId) });

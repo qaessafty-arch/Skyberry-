@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Settings, Users } from "lucide-react";
+import { ArrowLeft, Settings, UserRound, Users } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { ActionButton } from "@/components/action-button";
 import { joinRoom } from "@/features/actions";
@@ -24,11 +24,11 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       <div className="mx-auto max-w-lg">
         <div className="card grid justify-items-center gap-3 p-8 text-center">
           <Avatar name={conv.title ?? "Room"} path={conv.avatar_path} size={72} />
-          <h1 className="text-3xl font-extrabold">{conv.title}</h1>
+          <h1 className="text-[26px] font-extrabold leading-tight">{conv.title}</h1>
           <p className="text-dim">{conv.description || "A public room."}</p>
           <p className="chip"><Users aria-hidden size={14} />{conv.member_count} members</p>
           <ActionButton className="btn btn-primary" action={joinRoom.bind(null, id)}>Join room</ActionButton>
-          <Link href="/rooms" className="text-sm font-bold text-berryt">Back to rooms</Link>
+          <Link href="/rooms" className="text-sm font-bold text-brandt">Back to rooms</Link>
         </div>
       </div>
     );
@@ -57,16 +57,21 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   const title = conv.kind === "direct" ? other?.name ?? "Chat" : conv.title;
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-8.5rem)] max-w-3xl flex-col md:h-[calc(100dvh-5rem)]">
-      <header className="mb-3 flex items-center gap-3">
-        <Link href="/chats" aria-label="Back to chats" className="btn btn-ghost size-11 !p-0"><ArrowLeft aria-hidden size={20} /></Link>
-        <Avatar name={title ?? "Chat"} path={conv.kind === "direct" ? other?.avatar : conv.avatar_path} accent={other?.accent} />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-extrabold">{title}</h1>
-          <p className="truncate text-sm text-dim">{conv.kind === "direct" ? `@${other?.username ?? ""}` : `${conv.member_count} members · ${conv.kind}`}</p>
-        </div>
-        {conv.kind !== "direct" && (
-          <Link href={`/chats/${id}/settings`} aria-label="Group settings" className="btn btn-ghost size-11 !p-0"><Settings aria-hidden size={20} /></Link>
+    <div className="mx-auto flex h-[calc(100dvh-3.5rem-var(--nav-h)-3.25rem)] max-w-3xl flex-col md:h-[calc(100dvh-4.5rem)]">
+      <header className="glass mb-3 flex items-center gap-2 rounded-[20px] p-2 pr-3">
+        <Link href="/chats" aria-label="Back to chats" className="icon-btn"><ArrowLeft aria-hidden size={20} /></Link>
+        <Link href={conv.kind === "direct" && other ? `/u/${other.username}` : `/chats/${id}/settings`} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 transition-colors hover:bg-white/60"
+          aria-label={conv.kind === "direct" ? `View ${title}'s profile` : "Group details"}>
+          <Avatar name={title ?? "Chat"} path={conv.kind === "direct" ? other?.avatar : conv.avatar_path} accent={other?.accent} size={40} />
+          <span className="min-w-0">
+            <span className="block truncate text-[16px] font-extrabold">{title}</span>
+            <span className="block truncate text-[13px] text-faint">{conv.kind === "direct" ? `@${other?.username ?? ""}` : `${conv.member_count} members · ${conv.kind === "room" ? "Room" : "Group"}`}</span>
+          </span>
+        </Link>
+        {conv.kind === "direct" && other ? (
+          <Link href={`/u/${other.username}`} aria-label="Profile" className="icon-btn"><UserRound aria-hidden size={20} /></Link>
+        ) : (
+          <Link href={`/chats/${id}/settings`} aria-label="Group settings" className="icon-btn"><Settings aria-hidden size={20} /></Link>
         )}
       </header>
       <ChatThread conversationId={id} meId={user.id} kind={conv.kind} myRole={mine.role as string} members={members} initial={messages} initialMedia={media} />

@@ -34,7 +34,7 @@ export default async function SavedPage({ searchParams }: { searchParams: Promis
     <div className="mx-auto max-w-3xl">
       <PageHeader title="Saved" subtitle="Only you can see this." />
       <nav aria-label="Filter saved items" className="mb-5 flex flex-wrap gap-2">
-        {tabs.map(([k, l]) => <Link key={k} href={k === "all" ? "/saved" : `/saved?kind=${k}`} aria-current={kind === k ? "page" : undefined} className={`chip !min-h-9 !px-4 ${kind === k ? "!border-berryt !text-ink" : ""}`}>{l}</Link>)}
+        {tabs.map(([k, l]) => <Link key={k} href={k === "all" ? "/saved" : `/saved?kind=${k}`} aria-current={kind === k ? "page" : undefined} className={`chip !min-h-9 !px-4 ${kind === k ? "!border-brandt !text-ink" : ""}`}>{l}</Link>)}
       </nav>
       {items.length === 0 ? <EmptyState icon={Star} title="Nothing saved yet">Tap the star on a message to keep it here.</EmptyState> : (
         <ul className="grid gap-3">
@@ -50,7 +50,7 @@ export default async function SavedPage({ searchParams }: { searchParams: Promis
                 <div className="min-w-0 flex-1">
                   <p className="chip mb-2 capitalize">{it.kind}</p>
                   {it.kind === "message" && (m && !m.deleted_at ? <><p className="whitespace-pre-wrap break-words">{m.body ?? `[${m.kind}]`}</p>
-                    <Link href={`/chats/${m.conversation_id}`} className="text-sm font-bold text-berryt">Open conversation</Link></> : <p className="italic text-dim">No longer available</p>)}
+                    <Link href={`/chats/${m.conversation_id}`} className="text-sm font-bold text-brandt">Open conversation</Link></> : <p className="italic text-dim">No longer available</p>)}
                   {it.kind !== "message" && (url ? (asset?.kind === "video" ? <video src={url} controls preload="metadata" className="max-h-64 rounded-2xl" />
                     // eslint-disable-next-line @next/next/no-img-element
                     : <img src={url} alt={mo?.caption || "Saved media"} className="max-h-64 rounded-2xl" loading="lazy" />) : <p className="italic text-dim">No longer available</p>)}
