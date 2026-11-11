@@ -41,7 +41,7 @@ export function UniverseClient({ space, pet, friends, earned, reduceMotion }: {
     <div className="mx-auto grid max-w-6xl gap-6">
       <header><h1 className="text-4xl font-extrabold md:text-5xl">Your Universe</h1><p className="text-dim">Friends orbit your planet. Brighter, bigger orbs mean longer streaks.</p></header>
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <section className="card relative aspect-[4/3] min-h-[340px] overflow-hidden p-0" aria-label="3D Universe">
+        <section className="card relative h-[min(62vh,520px)] min-h-[300px] w-full min-w-0 overflow-hidden p-0" aria-label="3D Universe">
           {gl === null ? <div className="skeleton size-full" /> : gl ? (
             <Scene planet={space.planet} theme={space.theme} species={pet?.species ?? "berry-fox"} level={lp.level} friends={friends} reduceMotion={reduceMotion || osReduce} onPick={setPicked} />
           ) : <div className="grid size-full place-content-center p-6 text-center text-dim">3D isn&apos;t available on this device. Your Universe is listed below.</div>}

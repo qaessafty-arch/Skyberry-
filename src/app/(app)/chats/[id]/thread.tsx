@@ -35,6 +35,8 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
   const typingChannel = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastTypingSent = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
+  const newestAt = useRef<string>(initial[initial.length - 1]?.created_at ?? new Date(0).toISOString());
+  useEffect(() => { const last = messages[messages.length - 1]; if (last && last.created_at > newestAt.current) newestAt.current = last.created_at; }, [messages]);
 
   const markRead = useCallback(() => { void supabase.rpc("mark_conversation_read", { p_conv: conversationId }); }, [supabase, conversationId]);
 
@@ -66,7 +68,18 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
         const row = p.new as { user_id: string; last_read_at: string };
         setReads((cur) => ({ ...cur, [row.user_id]: row.last_read_at }));
       })
-      .subscribe();
+      .subscribe((status: string) => {
+        // (Re)connected: fetch anything sent while the live connection was being established or was down.
+        if (status !== "SUBSCRIBED") return;
+        void supabase.from("messages").select("*").eq("conversation_id", conversationId).gt("created_at", newestAt.current)
+          .order("created_at").limit(100).then(({ data }: { data: unknown[] | null }) => {
+            const missed = (data ?? []) as Message[];
+            if (!missed.length) return;
+            setMessages((cur) => [...cur, ...missed.filter((m) => !cur.some((x) => x.id === m.id))]);
+            missed.forEach((m) => { if (m.media_id) void loadMedia(m); });
+            markRead();
+          });
+      });
     // Private broadcast channel: realtime.messages RLS only admits conversation members.
     const tc = supabase.channel(`typing:${conversationId}`, { config: { private: true } })
       .on("broadcast", { event: "typing" }, ({ payload }: { payload: Record<string, unknown> }) => {

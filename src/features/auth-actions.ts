@@ -39,7 +39,11 @@ export async function login(_: ActionState, form: FormData): Promise<ActionState
   if (!parsed.success) return { fieldErrors: zodFieldErrors(parsed.error) };
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error) return { error: "Email or password is incorrect." };
+  if (error) {
+    // Only a 400 from Auth means bad credentials; anything else is a connectivity/server problem.
+    if (error.status === 400) return { error: error.code === "email_not_confirmed" ? "Confirm your email first, then log in." : "Email or password is incorrect." };
+    return { error: "We couldn't reach the server. Check your connection and try again." };
+  }
   redirect(safeNext(String(form.get("next") ?? "")));
 }
 

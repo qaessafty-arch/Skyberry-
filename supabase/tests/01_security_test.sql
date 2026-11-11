@@ -24,6 +24,8 @@ create function t.peek(stmt text) returns text language plpgsql security definer
 declare r text; begin execute stmt into r; return r; end $$;  -- runs as the (superuser) owner: bypasses RLS for test setup
 create function t.affected(stmt text) returns bigint language plpgsql as $$
 declare n bigint; begin execute stmt; get diagnostics n = row_count; return n; end $$;
+create function t.returning_count(stmt text) returns bigint language plpgsql as $$
+declare n bigint; begin execute 'with x as (' || stmt || ') select count(*) from x' into n; return n; end $$;
 grant usage on schema t to public;
 grant execute on all functions in schema t to public;
 
@@ -197,6 +199,7 @@ select t.eq('room made private disappears from discovery', t.count($$select 1 fr
 select t.as(:alice::uuid);
 insert into media_assets (id, owner_id, path, kind, mime, size_bytes) values
  ('10000000-0000-0000-0000-000000000001', :alice, :alice::text || '/m1.jpg', 'image', 'image/jpeg', 1000);
+select t.eq('owner can register media and read it back (insert ... returning)', t.returning_count(format($q$insert into media_assets (owner_id, path, kind, mime, size_bytes) values (%L, %L, 'image', 'image/png', 10) returning id$q$, :alice, :alice::text || '/returning.png')), 1::bigint);
 select t.throws('cannot register media under another user''s path', format('insert into media_assets (owner_id, path, kind, mime, size_bytes) values (%L, %L, ''image'', ''image/png'', 5)', :alice, :bob::text || '/x.png'));
 select t.throws('rejects unsupported mime', format('insert into media_assets (owner_id, path, kind, mime, size_bytes) values (%L, %L, ''image'', ''text/html'', 5)', :alice, :alice::text || '/x.html'));
 select t.throws('rejects oversized media', format('insert into media_assets (owner_id, path, kind, mime, size_bytes) values (%L, %L, ''image'', ''image/png'', 999999999)', :alice, :alice::text || '/big.png'));
@@ -344,6 +347,26 @@ select t.eq('game invite notification', t.count($$select 1 from notifications wh
 -- ── abuse: rate limiting ───────────────────────────────────────────────────
 select t.as(:alice::uuid);
 select t.throws('message flood is rate limited', format($f$do $x$ begin for i in 1..40 loop insert into messages (conversation_id, sender_id, body) values (%L, %L, 'spam ' || i); end loop; end $x$$f$, :'c_ab', :alice));
+
+-- ── membership lifecycle (account deletion) ────────────────────────────────
+select t.admin();
+select create_conversation('room', 'Lifecycle Room', '', 'public') as lr from (select t.as(:carol::uuid)) x \gset
+select t.as(:eve::uuid); select join_room(:'lr');
+select t.as(:dave::uuid); select join_room(:'lr');
+select t.admin();
+delete from auth.users where id = :carol;  -- owner deletes their account
+select t.eq('owner deletion hands ownership to the longest-standing member', (select user_id from conversation_members where conversation_id = :'lr' and role = 'owner'), :eve::uuid);
+delete from auth.users where id in (:eve, :dave);
+select t.eq('room with no members left is deleted', (select count(*) from conversations where id = :'lr'), 0::bigint);
+select t.eq('no orphaned group/room conversations remain', (select count(*) from conversations c where kind <> 'direct' and not exists (select 1 from conversation_members m where m.conversation_id = c.id)), 0::bigint);
+
+-- ── anonymous access ───────────────────────────────────────────────────────
+select t.as(null);
+select t.throws('anon cannot call RPCs', format('select open_direct_conversation(%L)', :bob));
+select t.throws('anon cannot read profiles', 'select * from profiles');
+select t.eq('anon may check username availability', username_available('fresh_name'), true);
+select t.as(null);
+select t.throws('anon cannot call search', $$select * from search_profiles('ali')$$);
 
 select t.admin();
 \echo ALL SECURITY TESTS PASSED

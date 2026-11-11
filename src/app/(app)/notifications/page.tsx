@@ -30,7 +30,7 @@ export default async function NotificationsPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <LiveRefresh tables={["notifications"]} filter={`user_id=eq.${user.id}`} />
-      <PageHeader title="Notifications" actions={unread > 0 ? <ActionButton action={() => markNotificationsRead()}>Mark all read</ActionButton> : undefined} />
+      <PageHeader title="Notifications" actions={unread > 0 ? <ActionButton action={markNotificationsRead.bind(null, undefined)}>Mark all read</ActionButton> : undefined} />
       {((invites?.length ?? 0) > 0 || (reqs?.length ?? 0) > 0) && (
         <section className="card mb-5 p-5" aria-labelledby="pend"><h2 id="pend" className="mb-3 text-lg font-bold">Waiting for you</h2>
           <ul className="grid gap-3">
