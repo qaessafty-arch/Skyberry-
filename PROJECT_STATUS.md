@@ -6,6 +6,10 @@ _Last updated: 2026-11-04 · Phases 0–9 attempted in one pass; honest status b
 
 Skyberry runs end-to-end against a **live Supabase project** (`Skyberry`, ref `acspwxeksjzvgrttkuav`, region ap-south-1, created on a second Supabase account because the first hit the free-plan limit). All 8 migrations are applied; the security advisor reports only intended items. A two-user, phone-sized (390×844) browser run passes **25/25** steps with **0 console errors**, twice in a row on fresh accounts.
 
+## Production (2026-11-12)
+
+Live at **https://skyberry.vercel.app** (Vercel, free plan). Production passed the two-user phone flow 26/26 with 0 console errors. Owner to-do: add `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` as sensitive Vercel variables (needed only for account deletion and the daily purge). Details: `docs/DEPLOYMENT.md`.
+
 ## UI/UX & identity transformation (2026-11-12)
 
 - New sky-blue design system (tokens, Manrope, restrained glass, AA-checked colour pairs): `docs/DESIGN_SYSTEM.md`.
