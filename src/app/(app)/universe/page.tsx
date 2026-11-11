@@ -8,9 +8,9 @@ export const metadata = { title: "Universe" };
 export default async function UniversePage() {
   const { supabase, user } = await requireUser();
   await supabase.rpc("ensure_universe");
-  const [{ data: space }, { data: pets }, { data: streaks }, { data: ms }, { data: settings }, { data: conns }] = await Promise.all([
-    supabase.from("universe_spaces").select("theme, planet").eq("user_id", user.id).single(),
-    supabase.from("pets").select("*"), // RLS: mine + my friends'
+  const [{ data: spaces }, { data: pets }, { data: streaks }, { data: ms }, { data: settings }, { data: conns }] = await Promise.all([
+    supabase.from("universe_spaces").select("user_id, theme, planet"), // RLS: mine + my friends'
+    supabase.from("pets").select("*"),                                  // RLS: mine + my friends'
     supabase.rpc("my_streaks"),
     supabase.from("milestones").select("key"),
     supabase.from("user_settings").select("reduce_motion").eq("user_id", user.id).single(),
@@ -18,13 +18,20 @@ export default async function UniversePage() {
   ]);
   const friendIds = (conns ?? []).map((c) => (c.requester_id === user.id ? c.addressee_id : c.requester_id) as string);
   const people = await profilesById(supabase, friendIds);
-  const mine = (pets as Pet[] | null)?.find((p) => p.owner_id === user.id);
+  const allPets = (pets ?? []) as (Pet & { accessory?: string | null })[];
+  const mine = allPets.find((p) => p.owner_id === user.id) ?? null;
+  const space = spaces?.find((s) => s.user_id === user.id) ?? { theme: "dusk", planet: "berry" };
   const st = (streaks ?? []) as Streak[];
   const friends = friendIds.flatMap((id) => {
     const p = people.get(id); if (!p) return [];
-    const pet = (pets as Pet[] | null)?.find((x) => x.owner_id === id);
-    return [{ id, name: p.display_name, username: p.username, accent: p.accent, level: Math.floor(Math.sqrt((pet?.xp ?? 0) / 25)) + 1, streak: st.find((s) => s.partner_id === id)?.effective_count ?? 0 }];
+    const pet = allPets.find((x) => x.owner_id === id);
+    return [{
+      id, name: p.display_name, username: p.username, accent: p.accent,
+      level: Math.floor(Math.sqrt((pet?.xp ?? 0) / 25)) + 1, petName: pet?.name ?? "Pip",
+      streak: st.find((s) => s.partner_id === id)?.effective_count ?? 0,
+      planet: (spaces?.find((s) => s.user_id === id)?.planet as string) ?? "berry",
+    }];
   });
-  return <UniverseClient space={space ?? { theme: "dusk", planet: "berry" }} pet={mine ?? null} friends={friends} streaks={st}
+  return <UniverseClient space={{ theme: space.theme as string, planet: space.planet as string }} pet={mine} friends={friends} streaks={st}
     earned={(ms ?? []).map((m) => m.key as string)} reduceMotion={Boolean(settings?.reduce_motion)} />;
 }

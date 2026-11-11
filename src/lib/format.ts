@@ -15,3 +15,5 @@ export function avatarUrl(path: string | null | undefined): string | null {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   return path && base ? `${base}/storage/v1/object/public/avatars/${path}` : null;
 }
+/** Epoch ms for "n hours ago" (used to group items by recency). */
+export const hoursAgo = (h: number) => Date.now() - h * 36e5;

@@ -1,16 +1,23 @@
 import Link from "next/link";
-import { Camera, Flame, Gamepad2, Images, MessageCircle, Orbit, Star, Users } from "lucide-react";
+import { ChevronRight, Flame, Gamepad2, Images, MessageCircle, Orbit, Plus, Star, UserPlus, Users } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { Avatar } from "@/components/avatar";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, Section } from "@/components/ui";
 import { respondRequest } from "@/features/actions";
 import { requireUser } from "@/lib/auth";
 import { timeAgo } from "@/lib/format";
 import { profilesById } from "@/lib/queries";
-import { petLevel } from "@/lib/universe";
+import { levelProgress, petMood } from "@/lib/universe";
 import type { ConversationRow, Streak } from "@/lib/types";
 
 export const metadata = { title: "Home" };
+
+const SHORTCUTS = [
+  { href: "/rooms", label: "Rooms", Icon: Users },
+  { href: "/games", label: "Games", Icon: Gamepad2 },
+  { href: "/saved", label: "Saved", Icon: Star },
+  { href: "/gallery", label: "Gallery", Icon: Images },
+];
 
 export default async function HomePage() {
   const { supabase, user, profile } = await requireUser();
@@ -19,127 +26,151 @@ export default async function HomePage() {
     supabase.rpc("my_conversations"),
     supabase.rpc("my_streaks"),
     supabase.from("connections").select("id, requester_id, created_at").eq("addressee_id", user.id).eq("status", "pending"),
-    supabase.from("pets").select("name, xp").eq("owner_id", user.id).single(),
+    supabase.from("pets").select("name, xp, last_cared_at").eq("owner_id", user.id).single(),
     supabase.rpc("moment_feed"),
   ]);
   const all = (convs ?? []) as ConversationRow[];
-  const conversations = all.slice(0, 4);
+  const conversations = all.slice(0, 5);
   const unreadTotal = all.reduce((n, c) => n + Number(c.unread_count), 0);
   const feed = (moments ?? []) as { author_id: string; viewed: boolean }[];
   const people = await profilesById(supabase, [...(requests ?? []).map((r) => r.requester_id as string), ...feed.map((m) => m.author_id)]);
   const authors = [...new Map(feed.map((m) => [m.author_id, m])).values()];
-  const hour = new Date().getUTCHours();
-  const tiles = [
-    { href: "/rooms", label: "Rooms", Icon: Users }, { href: "/games", label: "Games", Icon: Gamepad2 },
-    { href: "/saved", label: "Saved", Icon: Star }, { href: "/gallery", label: "Gallery", Icon: Images },
-  ];
   const myStreaks = (streaks ?? []) as Streak[];
+  const hour = new Date().getUTCHours();
+  const greeting = hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const lp = levelProgress(pet?.xp ?? 0);
+  const mood = petMood(pet?.last_cared_at ?? null);
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6">
-      <header>
-        <p className="text-dim">{hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"},</p>
-        <h1 className="text-4xl font-extrabold md:text-5xl">{profile.display_name}</h1>
+    <div className="mx-auto grid max-w-5xl gap-5 rise">
+      <header className="flex items-center gap-3">
+        <Link href="/profile" aria-label="Your profile"><Avatar name={profile.display_name} path={profile.avatar_path} accent={profile.accent} size={48} ring /></Link>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-dim">{greeting}</p>
+          <h1 className="truncate text-[26px] font-extrabold leading-tight md:text-[30px]">{profile.display_name}</h1>
+        </div>
       </header>
 
-      <section aria-label="Moments" className="card flex items-center gap-4 overflow-x-auto p-4">
-        <Link href="/camera" className="flex shrink-0 flex-col items-center gap-1 text-xs font-bold">
-          <span className="grid size-16 place-items-center rounded-full border-2 border-dashed border-berryt text-berryt"><Camera aria-hidden /></span>New Moment
-        </Link>
-        {authors.length === 0 && <p className="text-sm text-dim">When friends share Moments they&apos;ll appear here until they expire.</p>}
-        {authors.map((m) => {
-          const p = people.get(m.author_id);
-          if (!p) return null;
-          return (
-            <Link key={m.author_id} href={`/camera?tab=moments&author=${p.id}`} className="flex shrink-0 flex-col items-center gap-1 text-xs font-bold">
-              <span className={`rounded-full p-[3px] ${m.viewed ? "bg-line" : "bg-gradient-to-br from-[#ff7fb0] to-[#6cc8ff]"}`}>
-                <Avatar name={p.display_name} path={p.avatar_path} accent={p.accent} size={58} className="ring-2 ring-bg" />
-              </span>
-              <span className="max-w-16 truncate">{p.display_name}</span>
+      <section aria-label="Moments" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <ul className="flex gap-4 pb-1">
+          <li>
+            <Link href="/camera" className="flex w-[68px] flex-col items-center gap-1.5 text-center text-xs font-semibold text-dim">
+              <span className="grid size-[64px] place-items-center rounded-full border-[1.5px] border-dashed border-sky bg-white text-brandt"><Plus aria-hidden size={24} /></span>
+              Your Moment
             </Link>
-          );
-        })}
+          </li>
+          {authors.map((m) => {
+            const p = people.get(m.author_id);
+            if (!p) return null;
+            return (
+              <li key={m.author_id}>
+                <Link href={`/camera?tab=moments&author=${p.id}`} className="flex w-[68px] flex-col items-center gap-1.5 text-center text-xs font-semibold">
+                  <span className={`rounded-full p-[2.5px] ${m.viewed ? "bg-line" : "bg-[conic-gradient(from_200deg,var(--cyan),var(--sky),var(--sky-deep),var(--cyan))]"}`}>
+                    <Avatar name={p.display_name} path={p.avatar_path} accent={p.accent} size={59} className="ring-[2.5px] ring-white" />
+                  </span>
+                  <span className="w-full truncate">{p.id === user.id ? "You" : p.display_name.split(" ")[0]}</span>
+                </Link>
+              </li>
+            );
+          })}
+          {authors.length === 0 && <li className="self-center text-sm text-faint">Friends&apos; Moments appear here until they expire.</li>}
+        </ul>
       </section>
 
       {(requests?.length ?? 0) > 0 && (
-        <section aria-labelledby="req" className="card p-5">
-          <h2 id="req" className="mb-3 text-lg font-bold">Connection requests</h2>
+        <Section title="Connection requests" icon={UserPlus} id="req">
           <ul className="grid gap-3">
             {requests!.map((r) => {
               const p = people.get(r.requester_id as string);
               return (
                 <li key={r.id} className="flex flex-wrap items-center gap-3">
-                  <Avatar name={p?.display_name ?? "?"} path={p?.avatar_path} accent={p?.accent} />
-                  <div className="min-w-0 flex-1"><Link href={`/u/${p?.username}`} className="font-bold">{p?.display_name}</Link><p className="text-sm text-dim">@{p?.username}</p></div>
-                  <ActionButton className="btn btn-primary btn-sm" action={respondRequest.bind(null, r.id as string, true)}>Accept</ActionButton>
-                  <ActionButton className="btn btn-ghost btn-sm" action={respondRequest.bind(null, r.id as string, false)}>Decline</ActionButton>
+                  <Avatar name={p?.display_name ?? "?"} path={p?.avatar_path} accent={p?.accent} size={42} />
+                  <Link href={`/u/${p?.username}`} className="min-w-0 flex-1"><b className="block truncate">{p?.display_name}</b><span className="text-sm text-faint">@{p?.username}</span></Link>
+                  <div className="flex gap-2">
+                    <ActionButton className="btn btn-primary btn-sm" action={respondRequest.bind(null, r.id as string, true)}>Accept</ActionButton>
+                    <ActionButton className="btn btn-ghost btn-sm" action={respondRequest.bind(null, r.id as string, false)}>Decline</ActionButton>
+                  </div>
                 </li>
               );
             })}
           </ul>
-        </section>
+        </Section>
       )}
 
-      <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
-        <section aria-labelledby="chats" className="card p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 id="chats" className="text-lg font-bold">Recent chats {unreadTotal > 0 && <span className="chip ml-2 !text-berryt">{unreadTotal} unread</span>}</h2>
-            <Link href="/chats" className="text-sm font-bold text-berryt">All chats</Link>
-          </div>
+      <div className="grid gap-5 md:grid-cols-[1.45fr_1fr]">
+        <Section title="Recent chats" icon={MessageCircle} id="chats"
+          action={<Link href="/chats" className="inline-flex items-center gap-0.5 text-sm font-bold text-brandt">{unreadTotal > 0 ? `${unreadTotal} unread` : "All chats"}<ChevronRight aria-hidden size={16} /></Link>}>
           {conversations.length === 0 ? (
             <EmptyState icon={MessageCircle} title="No conversations yet" action={{ href: "/search", label: "Find people" }}>
               Search for a friend by username and say hello.
             </EmptyState>
           ) : (
-            <ul className="grid gap-1">
+            <ul className="-mx-2 grid">
               {conversations.map((c) => {
                 const name = c.kind === "direct" ? c.other_display_name ?? "Someone" : c.title ?? "Untitled";
+                const unread = Number(c.unread_count);
                 return (
                   <li key={c.id}>
-                    <Link href={`/chats/${c.id}`} className="flex items-center gap-3 rounded-2xl p-2 hover:bg-surface2">
-                      <Avatar name={name} path={c.kind === "direct" ? c.other_avatar_path : c.avatar_path} />
-                      <span className="min-w-0 flex-1"><span className="block truncate font-bold">{name}</span><span className="block truncate text-sm text-dim">{c.last_preview ?? "No messages yet"}</span></span>
-                      <span className="text-xs text-faint">{timeAgo(c.last_message_at)}</span>
-                      {Number(c.unread_count) > 0 && <span className="rounded-full bg-berry px-2 text-xs font-bold text-white">{c.unread_count}</span>}
+                    <Link href={`/chats/${c.id}`} className="flex items-center gap-3 rounded-2xl px-2 py-2.5 transition-colors hover:bg-surface2">
+                      <Avatar name={name} path={c.kind === "direct" ? c.other_avatar_path : c.avatar_path} size={44} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-bold">{name}</span>
+                        <span className={`block truncate text-sm ${unread ? "font-semibold text-ink" : "text-faint"}`}>{c.last_preview ?? "No messages yet"}</span>
+                      </span>
+                      <span className="flex flex-col items-end gap-1">
+                        <span className="text-xs text-faint">{timeAgo(c.last_message_at)}</span>
+                        {unread > 0 && <span className="badge" aria-label={`${unread} unread`}>{unread}</span>}
+                      </span>
                     </Link>
                   </li>
                 );
               })}
             </ul>
           )}
-        </section>
+        </Section>
 
-        <div className="grid content-start gap-6">
-          <section aria-labelledby="streaks" className="card p-5">
-            <h2 id="streaks" className="mb-3 flex items-center gap-2 text-lg font-bold"><Flame aria-hidden className="text-sun" size={20} />Streaks</h2>
+        <div className="grid content-start gap-5">
+          <Link href="/universe" className="group relative overflow-hidden rounded-[var(--radius-lg)] bg-[linear-gradient(160deg,var(--space-3),var(--space)_75%)] p-5 text-[var(--ink-on-dark)] shadow-[var(--shadow-2)]">
+            <span aria-hidden className="absolute -right-10 -top-12 size-44 rounded-full bg-[radial-gradient(circle_at_35%_35%,#8fdcff,#218bcb_55%,#0d2945_80%)] opacity-90" />
+            <span aria-hidden className="absolute -right-12 -top-14 size-52 rounded-full border border-white/15" />
+            <span className="relative block">
+              <span className="eyebrow !text-[#9fc3dd]">Your companion</span>
+              <span className="mt-1 block text-xl font-extrabold">{pet?.name ?? "Pip"}</span>
+              <span className="text-sm text-[#cfe6f5]">Level {lp.level} · feeling {mood}</span>
+              <span className="mt-4 block h-1.5 w-full max-w-[220px] overflow-hidden rounded-full bg-white/15" role="progressbar" aria-label="Level progress" aria-valuenow={lp.pct} aria-valuemin={0} aria-valuemax={100}>
+                <span className="block h-full rounded-full bg-[var(--cyan)]" style={{ width: `${lp.pct}%` }} />
+              </span>
+              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-white">
+                <Orbit aria-hidden size={16} />Visit your Universe<ChevronRight aria-hidden size={16} className="transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </span>
+          </Link>
+
+          <Section title="Streaks" icon={Flame} id="streaks">
             {myStreaks.length === 0 ? (
               <p className="text-sm text-dim">Message a friend and have them reply on the same day to start a streak.</p>
             ) : (
-              <ul className="grid gap-2">
+              <ul className="grid gap-2.5">
                 {myStreaks.slice(0, 4).map((s) => (
                   <li key={s.partner_id} className="flex items-center gap-3">
-                    <Avatar name={s.display_name} path={s.avatar_path} size={36} />
-                    <span className="min-w-0 flex-1 truncate font-bold">{s.display_name}</span>
-                    <span className="chip">{s.effective_count} day{s.effective_count === 1 ? "" : "s"}</span>
-                    <span className={`text-xs font-bold ${s.status === "at_risk" ? "text-sun" : s.status === "complete" ? "text-mint" : "text-faint"}`}>
+                    <Avatar name={s.display_name} path={s.avatar_path} size={34} />
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{s.display_name}</span>
+                    <span className="inline-flex items-center gap-1 text-sm font-extrabold text-warm"><Flame aria-hidden size={15} />{s.effective_count}</span>
+                    <span className={`chip ${s.status === "at_risk" ? "!text-warm" : s.status === "complete" ? "!text-success" : ""}`}>
                       {s.status === "complete" ? "Done today" : s.status === "at_risk" ? "Say hi today" : "Start again"}
                     </span>
                   </li>
                 ))}
               </ul>
             )}
-          </section>
-          <Link href="/universe" className="card flex items-center gap-4 p-5 hover:brightness-110">
-            <span className="grid size-12 place-items-center rounded-2xl bg-surface2 text-berryt"><Orbit aria-hidden /></span>
-            <span><span className="block font-bold">{pet?.name ?? "Your pet"} · level {petLevel(pet?.xp ?? 0)}</span><span className="text-sm text-dim">Visit your Universe</span></span>
-          </Link>
+          </Section>
         </div>
       </div>
 
-      <nav aria-label="Explore" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {tiles.map(({ href, label, Icon }) => (
-          <Link key={href} href={href} className="card flex min-h-20 items-center gap-3 px-4 font-bold hover:brightness-110">
-            <Icon aria-hidden className="text-berryt" size={22} />{label}
+      <nav aria-label="Explore" className="card grid grid-cols-4 p-2">
+        {SHORTCUTS.map(({ href, label, Icon }) => (
+          <Link key={href} href={href} className="flex flex-col items-center gap-1.5 rounded-2xl py-3 text-[13px] font-semibold text-dim transition-colors hover:bg-surface2 hover:text-ink">
+            <span className="grid size-10 place-items-center rounded-[13px] bg-ice text-brandt"><Icon aria-hidden size={19} /></span>{label}
           </Link>
         ))}
       </nav>

@@ -10,10 +10,14 @@ Verified by automated tests (`npm run test:db`, `npm test`, `npm run test:e2e`):
 - [x] Anonymous access to uploads/cron rejected; security headers set
 - [x] Service-role key only in `server-only` modules; `.env*` ignored by git
 
-Not yet verified (requires a live project) — do before launch:
-- [ ] Storage policies exercised through the real Storage API (SQL predicates are tested, API behaviour is not)
-- [ ] Realtime private-channel authorisation (`realtime.messages` policies) and `postgres_changes` RLS filtering end-to-end
-- [ ] Supabase Security Advisor clean; auth rate limits/CAPTCHA configured for sign-up; email confirmation policy decided
+Verified against the live project:
+- [x] Storage policies through the real Storage API (private upload + signed URL viewed by the other chat member)
+- [x] Realtime `postgres_changes` delivery for messages, read markers, games
+- [x] Security Advisor: only intended findings remain; signed-out visitors can call only `username_available`
+
+Still to do before launch:
+- [ ] Typing-indicator private channel checked with an outsider account
+- [ ] auth rate limits/CAPTCHA configured for sign-up; email confirmation policy decided
 - [ ] Penetration test of upload endpoints; CSP header (currently none — add once script sources are final)
 
 Known trade-offs: `username_available` is callable anonymously (reveals username existence, needed for sign-up UX); avatars are in a public bucket by design; read receipts are always on for conversation members.

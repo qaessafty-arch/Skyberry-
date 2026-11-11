@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: { default: "Skyberry", template: "%s · Skyberry" },
   description: "Skyberry is a private, expressive social world: chats, rooms, Moments, pets and games.",
 };
-export const viewport: Viewport = { themeColor: "#0d0a1f", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#f3f9fd", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

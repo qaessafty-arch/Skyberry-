@@ -21,3 +21,6 @@ grant usage on schema realtime to authenticated;
 grant select, insert on realtime.messages to authenticated;
 grant execute on function realtime.topic() to authenticated;
 create publication supabase_realtime;
+
+-- Mimic hosted Supabase: new functions in public are executable by anon/authenticated by default.
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;

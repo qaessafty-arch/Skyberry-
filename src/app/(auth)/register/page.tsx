@@ -10,7 +10,7 @@ export default function RegisterPage() {
   if (state.ok) {
     return (
       <div className="grid gap-4">
-        <h1 className="text-3xl font-extrabold">Almost there</h1>
+        <h1 className="text-[26px] font-extrabold leading-tight">Almost there</h1>
         <OkNote>{state.message}</OkNote>
         <Link className="btn btn-soft" href="/login">Go to log in</Link>
       </div>
@@ -18,7 +18,7 @@ export default function RegisterPage() {
   }
   return (
     <form action={action} className="grid gap-4" noValidate>
-      <h1 className="text-3xl font-extrabold">Join Skyberry</h1>
+      <h1 className="text-[26px] font-extrabold leading-tight">Join Skyberry</h1>
       {state.error && <ErrorNote>{state.error}</ErrorNote>}
       <Field label="Display name" name="displayName" autoComplete="name" required error={state.fieldErrors?.displayName} />
       <Field label="Username" name="username" autoComplete="username" required autoCapitalize="none" spellCheck={false}
@@ -27,7 +27,7 @@ export default function RegisterPage() {
       <Field label="Password" name="password" type="password" autoComplete="new-password" required minLength={10}
         hint="At least 10 characters" error={state.fieldErrors?.password} />
       <Submit>Create account</Submit>
-      <p className="text-sm text-dim">Already have an account? <Link className="text-berryt underline" href="/login">Log in</Link></p>
+      <p className="text-sm text-dim">Already have an account? <Link className="text-brandt underline" href="/login">Log in</Link></p>
     </form>
   );
 }

@@ -6,6 +6,7 @@ import { blockUser, openDirect, removeConnection, respondRequest, sendRequest, s
 import { requireUser } from "@/lib/auth";
 import { avatarUrl } from "@/lib/format";
 import type { Profile } from "@/lib/types";
+import { SKY_BANNER } from "@/lib/design";
 
 export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
@@ -20,13 +21,13 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
   const banner = avatarUrl(p.banner_path);
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl rise">
       <article className="card overflow-hidden">
-        <div className="h-36 bg-gradient-to-br from-berry/60 via-violet/40 to-sky/40 bg-cover bg-center" style={banner ? { backgroundImage: `url(${banner})` } : undefined} />
+        <div className={`h-32 bg-cover bg-center md:h-40 ${banner ? "" : SKY_BANNER}`} style={banner ? { backgroundImage: `url(${banner})` } : undefined} />
         <div className="-mt-12 px-6 pb-6">
-          <Avatar name={p.display_name} path={p.avatar_path} accent={p.accent} size={96} className="ring-4 ring-surface" />
-          <h1 className="mt-3 text-3xl font-extrabold">{p.display_name}</h1>
-          <p className="text-dim">@{p.username} {p.visibility !== "public" && <span className="chip ml-1"><Lock aria-hidden size={12} />{p.visibility === "friends" ? "Connections only" : "Private"}</span>}</p>
+          <Avatar name={p.display_name} path={p.avatar_path} accent={p.accent} size={96} className="ring-4 ring-white" />
+          <h1 className="mt-3 text-[26px] font-extrabold leading-tight">{p.display_name}</h1>
+          <p className="text-faint">@{p.username} {p.visibility !== "public" && <span className="chip ml-1"><Lock aria-hidden size={12} />{p.visibility === "friends" ? "Connections only" : "Private"}</span>}</p>
           {p.status_text && <p className="mt-2 font-semibold">{p.status_text}</p>}
           {p.bio && <p className="mt-2 whitespace-pre-wrap text-dim">{p.bio}</p>}
           <div className="mt-5 flex flex-wrap gap-2">

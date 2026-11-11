@@ -31,5 +31,6 @@ To create the backend follow [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) (a
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md) · [Supabase setup](docs/SUPABASE_SETUP.md) · [Testing](docs/TESTING.md)
+- [Design system](docs/DESIGN_SYSTEM.md) · [Companion pipeline](docs/PET_PIPELINE.md)
 - [Deployment](docs/DEPLOYMENT.md) · [Security notes](docs/SECURITY.md) · [Assets & licensing](docs/ASSETS.md)
 - [Project status & feature checklist](PROJECT_STATUS.md)

@@ -4,6 +4,7 @@ import { Field, Submit } from "@/components/form-bits";
 import { ErrorNote, OkNote } from "@/components/ui";
 import { updateProfile } from "@/features/actions";
 import type { Profile } from "@/lib/types";
+import { ACCENT_LABELS } from "@/components/avatar";
 
 const ACCENTS = ["berry", "sky", "mint", "sun", "violet"] as const;
 
@@ -11,7 +12,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   const [state, action] = useActionState(updateProfile, {});
   return (
     <form action={action} className="card grid gap-4 p-5" noValidate>
-      <h2 className="text-lg font-bold">Edit profile</h2>
+      <h2 className="section-title">Edit profile</h2>
       {state.error && <ErrorNote>{state.error}</ErrorNote>}
       {state.ok && <OkNote>{state.message}</OkNote>}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -24,7 +25,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       <fieldset><legend className="label">Accent colour</legend>
         <div className="flex flex-wrap gap-2">{ACCENTS.map((a) => (
           <label key={a} className="cursor-pointer"><input type="radio" name="accent" value={a} defaultChecked={profile.accent === a} className="peer sr-only" />
-            <span className="chip capitalize peer-checked:border-berryt peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2">{a}</span></label>
+            <span className="chip !min-h-9 !px-3 peer-checked:!border-sky peer-checked:!bg-ice peer-checked:!text-brandt peer-focus-visible:outline peer-focus-visible:outline-2">{ACCENT_LABELS[a]}</span></label>
         ))}</div></fieldset>
       <div><label htmlFor="visibility" className="label">Who can see your profile</label>
         <select id="visibility" name="visibility" defaultValue={profile.visibility} className="field">

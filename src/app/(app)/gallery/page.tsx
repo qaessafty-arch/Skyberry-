@@ -20,7 +20,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
       <PageHeader title="Gallery" subtitle="Photos and videos you've uploaded or that were shared with you." />
       <nav aria-label="Gallery view" className="mb-5 flex gap-2">
         {[["mine", "My uploads"], ["shared", "Shared with me"]].map(([k, l]) => (
-          <a key={k} href={`/gallery?view=${k}`} aria-current={view === k ? "page" : undefined} className={`chip !min-h-9 !px-4 ${view === k ? "!border-berryt !text-ink" : ""}`}>{l}</a>
+          <a key={k} href={`/gallery?view=${k}`} aria-current={view === k ? "page" : undefined} className={`chip !min-h-9 !px-4 ${view === k ? "!border-brandt !text-ink" : ""}`}>{l}</a>
         ))}
       </nav>
       {items.length === 0 ? <EmptyState icon={Images} title="No media yet" action={view === "mine" ? { href: "/camera", label: "Open camera" } : undefined}>

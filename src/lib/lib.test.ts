@@ -73,7 +73,8 @@ describe("universe rules (mirror SQL)", () => {
     const now = Date.now();
     expect(petMood(new Date(now - 3600e3).toISOString(), now)).toBe("glowing");
     expect(petMood(new Date(now - 12 * 3600e3).toISOString(), now)).toBe("content");
-    expect(petMood(null, now)).toBe("sleepy");
+    expect(petMood(null, now)).toBe("content");
+    expect(petMood(new Date(now - 30 * 3600e3).toISOString(), now)).toBe("sleepy");
   });
 });
 

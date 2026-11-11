@@ -522,7 +522,11 @@ grant execute on function private.can_use_typing_topic(text) to authenticated;
 
 do $$ begin
   if to_regclass('realtime.messages') is not null then
-    execute 'alter table realtime.messages enable row level security';
+    -- On hosted Supabase realtime.messages is owned by the Realtime service and already has RLS on.
+    begin
+      execute 'alter table realtime.messages enable row level security';
+    exception when insufficient_privilege then null;
+    end;
     execute 'drop policy if exists typing_read on realtime.messages';
     execute 'drop policy if exists typing_write on realtime.messages';
     execute $p$create policy typing_read on realtime.messages for select to authenticated
