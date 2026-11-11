@@ -8,9 +8,9 @@ The app **builds**, passes typecheck/lint/unit/DB/E2E suites that can run offlin
 
 ## Blocker & exact next step
 
-1. Create the Supabase project `skyberry` (or tell me which organization to create it in).
-2. Apply `supabase/migrations/*.sql`, fill `.env.local` (see `docs/SUPABASE_SETUP.md`).
-3. Then the live-only checks below can be run (Realtime, Storage API, full-browser flows).
+- Supabase project **`skyberry`** exists (ref `hqopvsszghnlvqcxcgzj`, us-east-1, created 2026-11-04) but is **paused** and has **no migrations applied** yet. The first migration attempt timed out waiting for an approval prompt; the project then auto-paused after a week of inactivity.
+- It cannot be restored right now: the account is at the Supabase free-plan limit of 2 active projects (`campus-nav` plus one other). `ocean` was paused to make room on 2026-11-04.
+- Next: free a slot (pause or delete one active project, or upgrade), restore `skyberry`, apply `supabase/migrations/*.sql` in order (SQL editor or `supabase db push`), fill `.env.local`, then run the live-only checks below.
 
 ## Verified (commands actually run)
 
