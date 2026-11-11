@@ -1,7 +1,7 @@
 "use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, OrbitControls, Stars } from "@react-three/drei";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Environment, Lightformer, OrbitControls, PerformanceMonitor, Stars } from "@react-three/drei";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { HomePlanet, MiniPlanet } from "./planet";
 import { PetRenderer } from "./pets/registry";
@@ -88,24 +88,33 @@ function FrameCamera({ framing = "default" }: { framing?: "default" | "face" }) 
 export type UniverseSceneProps = {
   planet: string; theme: string; species: string; level: number; mood: PetMood; accessory: Accessory;
   friends: OrbitFriend[]; selectedFriend: string | null; reduceMotion: boolean; quality: "high" | "low";
-  reactKey: number; happyKey: number; framing?: "default" | "face"; onPickFriend: (f: OrbitFriend | null) => void; onPetTap: () => void;
+  reactKey: number; happyKey: number; framing?: "default" | "face";
+  /** Stop rendering entirely (leaving the page, hidden tab, scrolled away). */
+  paused?: boolean;
+  /** Software-rendered WebGL (no GPU): render only when something changes. */
+  software?: boolean;
+  onPickFriend: (f: OrbitFriend | null) => void; onPetTap: () => void;
 };
 
 export default function UniverseScene(p: UniverseSceneProps) {
-  const still = p.reduceMotion;
+  // Adaptive quality: if a real device can't keep up, step down once (fewer fur layers, dpr 1, lighter shadows).
+  const [degraded, setDegraded] = useState(false);
+  const quality = degraded || p.software ? "low" : p.quality;
+  const still = p.reduceMotion || Boolean(p.software);
   return (
-    <Canvas shadows frameloop={still ? "demand" : "always"} dpr={p.quality === "high" ? [1, 1.75] : [1, 1.3]}
+    <Canvas shadows frameloop={p.paused ? "never" : still ? "demand" : "always"} dpr={degraded || p.software ? 1 : quality === "high" ? [1, 1.75] : [1, 1.3]}
       camera={{ position: [1.25, 1.12, 3.55], fov: 36, near: 0.1, far: 200 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       onPointerMissed={() => p.onPickFriend(null)}
       aria-label="Interactive 3D Universe. Drag to look around, tap Pip to interact. The same information is listed below the scene.">
+      <PerformanceMonitor ms={300} iterations={8} threshold={0.75} onDecline={() => setDegraded(true)} onFallback={() => setDegraded(true)} />
       <SkyDome theme={p.theme} />
-      <Stars radius={70} depth={25} count={p.quality === "high" ? 2200 : 900} factor={2.6} saturation={0} fade speed={still ? 0 : 0.35} />
+      <Stars radius={70} depth={25} count={quality === "high" ? 2200 : 900} factor={2.6} saturation={0} fade speed={still ? 0 : 0.35} />
 
       <hemisphereLight args={["#d4efff", "#3a6488", 0.55]} />
       <directionalLight position={[0.5, -0.6, 2.5]} intensity={0.55} color="#cfeeff" /> {/* soft bounce from the planet */}
       <directionalLight castShadow position={[2.6, 4.6, 3.4]} intensity={3.1} color="#fff5ea"
-        shadow-mapSize={[p.quality === "high" ? 2048 : 1024, p.quality === "high" ? 2048 : 1024]} shadow-bias={-0.0005} shadow-normalBias={0.025}
+        shadow-mapSize={[quality === "high" ? 2048 : 1024, quality === "high" ? 2048 : 1024]} shadow-bias={-0.0005} shadow-normalBias={0.025}
         shadow-camera-left={-1.6} shadow-camera-right={1.6} shadow-camera-top={1.8} shadow-camera-bottom={-1.2} shadow-camera-near={1} shadow-camera-far={12} />
       <directionalLight position={[-3.5, 1.6, -3.2]} intensity={1.6} color="#9fdcf8" /> {/* cyan rim for the fur silhouette */}
       <Environment resolution={64} frames={1}>
@@ -114,11 +123,11 @@ export default function UniverseScene(p: UniverseSceneProps) {
         <Lightformer form="ring" intensity={0.8} color="#42d5e8" position={[3, 2, -4]} scale={2} />
       </Environment>
 
-      <HomePlanet style={p.planet} radius={PLANET_R} quality={p.quality} still={still} />
+      <HomePlanet style={p.planet} radius={PLANET_R} quality={quality} still={still} />
       <ContactBlob />
       <Suspense fallback={null}>
         <PetRenderer species={p.species} mood={p.mood} level={p.level} accessory={p.accessory} reactKey={p.reactKey} happyKey={p.happyKey}
-          reduceMotion={still} quality={p.quality} onTap={p.onPetTap} />
+          reduceMotion={still} quality={quality} onTap={p.onPetTap} />
       </Suspense>
       {p.friends.slice(0, 12).map((f, i) => (
         <FriendWorld key={f.id} f={f} index={i} total={Math.min(p.friends.length, 12)} selected={p.selectedFriend === f.id} still={still} onPick={p.onPickFriend} />

@@ -1,5 +1,5 @@
 "use client";
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { COAT, TailGeometry, bodyGeometry, earGeometry, furNoiseTexture, headGeometry, irisTexture, legGeometry, ruffGeometry } from "./fox-geometry";
@@ -58,15 +58,18 @@ export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMot
   const legs = [useRef<THREE.Group>(null), useRef<THREE.Group>(null), useRef<THREE.Group>(null), useRef<THREE.Group>(null)];
 
   // brain state (refs: no React re-renders per frame)
+  // In on-demand rendering (reduced motion / software GL) keep drawing only until springs settle.
+  const settleUntil = useRef(0);
+  const invalidate = useThree((st) => st.invalidate);
   const brain = useRef({ mode: (mood === "sleepy" ? "sleepy" : "idle") as Mode, until: 0, nextBlink: 1.5, blink: 0, earTwitch: 0, nextTwitch: 3,
     look: new THREE.Vector2(), lastPointer: -10, pointer: new THREE.Vector2(), tapPoint: new THREE.Vector3(), hop: 0,
     s: { bodyY: BODY_Y, neckX: 0, headY: 0, headX: 0, headZ: 0, ears: 0, lids: 0, wagAmp: 0.08, wagFreq: 1.1, curl: 0, tuck: 0, breath: 0 } });
   const tailCurve = useMemo(() => new THREE.CatmullRomCurve3([0, 1, 2, 3, 4].map(() => new THREE.Vector3())), []);
 
   // external events → behaviour
-  useEffect(() => { const b = brain.current; if (b.mode !== "react") b.mode = mood === "sleepy" ? "sleepy" : "idle"; }, [mood]);
-  useEffect(() => { if (!reactKey) return; const b = brain.current; b.mode = "react"; b.until = performance.now() / 1000 + 1.8; b.hop = 1; }, [reactKey]);
-  useEffect(() => { if (!happyKey) return; const b = brain.current; b.mode = "happy"; b.until = performance.now() / 1000 + 3.2; b.hop = 1; }, [happyKey]);
+  useEffect(() => { const b = brain.current; if (b.mode !== "react") b.mode = mood === "sleepy" ? "sleepy" : "idle"; settleUntil.current = performance.now() / 1000 + 1.5; invalidate(); }, [mood, invalidate]);
+  useEffect(() => { if (!reactKey) return; const b = brain.current; b.mode = "react"; b.until = performance.now() / 1000 + 1.8; b.hop = 1; settleUntil.current = b.until + 1.2; invalidate(); }, [reactKey, invalidate]);
+  useEffect(() => { if (!happyKey) return; const b = brain.current; b.mode = "happy"; b.until = performance.now() / 1000 + 3.2; b.hop = 1; settleUntil.current = b.until + 1.2; invalidate(); }, [happyKey, invalidate]);
 
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
@@ -149,7 +152,7 @@ export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMot
     });
     assets.tail.pose(tailCurve);
     if (tailPivot.current) tailPivot.current.rotation.y = wag * 0.6;
-    if (reduceMotion) state.invalidate();
+    if (reduceMotion && now < settleUntil.current) state.invalidate();
   });
 
   const tap = (e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); onTap?.(); };
