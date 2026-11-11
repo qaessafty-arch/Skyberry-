@@ -8,7 +8,7 @@ import { moderateDelete, saveItem } from "@/features/actions";
 import { timeAgo } from "@/lib/format";
 import { getBrowserClient } from "@/lib/supabase/client";
 import type { Message } from "@/lib/types";
-import { precheck, uploadMedia } from "@/lib/upload-client";
+import { precheck, preparePhoto, uploadMedia } from "@/lib/upload-client";
 
 export type MemberInfo = { id: string; role: string; lastReadAt: string; name: string; username: string; avatar: string | null; accent: string };
 export type MediaInfo = { url: string; kind: "image" | "video" };
@@ -131,7 +131,7 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
     if (bad) { setError(bad); return; }
     setError(null); setUploadPct(0);
     try {
-      const up = await uploadMedia(file, "message", setUploadPct);
+      const up = await uploadMedia(await preparePhoto(file), "message", setUploadPct);
       const { error: err } = await supabase.from("messages").insert({ conversation_id: conversationId, sender_id: meId, kind: up.kind, media_id: up.id });
       if (err) setError("Couldn't send the file.");
     } catch (e) { setError(e instanceof Error ? e.message : "Upload failed."); }

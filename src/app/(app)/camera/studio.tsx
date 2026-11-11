@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui";
 import { saveItem } from "@/features/actions";
 import { timeLeft } from "@/lib/format";
 import { getBrowserClient } from "@/lib/supabase/client";
-import { precheck, uploadMedia } from "@/lib/upload-client";
+import { CLIENT_MAX, precheck, preparePhoto, uploadMedia } from "@/lib/upload-client";
 
 export type MomentItem = {
   id: string; authorId: string; authorName: string; authorUsername: string; authorAvatar: string | null; accent: string; url: string;
@@ -84,7 +84,7 @@ function Capture({ friends, onShared }: { friends: { id: string; name: string }[
     if (!stream.current) return;
     const mime = ["video/webm;codecs=vp9", "video/webm", "video/mp4"].find((m) => MediaRecorder.isTypeSupported(m));
     try {
-      const r = new MediaRecorder(stream.current, mime ? { mimeType: mime, videoBitsPerSecond: 2_000_000 } : undefined);
+      const r = new MediaRecorder(stream.current, mime ? { mimeType: mime, videoBitsPerSecond: 900_000 } : { videoBitsPerSecond: 900_000 });
       chunks.current = [];
       r.ondataavailable = (e) => e.data.size && chunks.current.push(e.data);
       r.onstop = () => {
@@ -110,7 +110,8 @@ function Capture({ friends, onShared }: { friends: { id: string; name: string }[
     if (audience === "selected" && selected.length === 0) { setError("Choose at least one person."); return; }
     setError(null); setPct(0);
     try {
-      const file = new File([shot.blob], shot.name, { type: shot.blob.type });
+      const file = await preparePhoto(new File([shot.blob], shot.name, { type: shot.blob.type }));
+      if (file.size > (shot.kind === "image" ? CLIENT_MAX.image : CLIENT_MAX.video)) throw new Error("That clip is too large to upload. Record a shorter one.");
       const up = await uploadMedia(file, "moment", setPct);
       const { error: err } = await getBrowserClient().rpc("create_moment", { p_media: up.id, p_caption: caption, p_overlay: overlay, p_audience: audience, p_selected: selected, p_ttl_hours: ttl });
       if (err) throw new Error("Couldn't share your Moment. Please retry.");
