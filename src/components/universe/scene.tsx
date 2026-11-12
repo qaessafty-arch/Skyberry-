@@ -108,6 +108,7 @@ export default function UniverseScene(p: UniverseSceneProps) {
       camera={{ position: [1.25, 1.12, 3.55], fov: 36, near: 0.1, far: 200 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       onPointerMissed={() => p.onPickFriend(null)}
+      role="img"
       aria-label="Interactive 3D Universe. Drag to look around, tap Pip to interact. The same information is listed below the scene.">
       <PerformanceMonitor ms={300} iterations={8} threshold={0.75} onDecline={() => setDegraded(true)} onFallback={() => setDegraded(true)} />
       <SkyDome theme={p.theme} />

@@ -21,7 +21,7 @@
   /* text */
   --ink: #142e46;
   --ink-dim: #4e6a82;      /* secondary, 5.3:1 on --bg */
-  --ink-faint: #5f798e;    /* metadata, 4.5:1 on white */
+  --ink-faint: #557086;    /* metadata, 4.5:1+ on white and tinted panels */
   --ink-on-dark: #f5fbff;
 
   /* brand */
