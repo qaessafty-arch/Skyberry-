@@ -18,6 +18,13 @@ Verified against the live project:
 Still to do before launch:
 - [ ] Typing-indicator private channel checked with an outsider account
 - [ ] auth rate limits/CAPTCHA configured for sign-up; email confirmation policy decided
-- [ ] Penetration test of upload endpoints; CSP header (currently none — add once script sources are final)
+- [x] Content-Security-Policy (self + Supabase only; `frame-ancestors 'none'`, `object-src 'none'`) and HSTS
+- [ ] Penetration test of upload endpoints; move CSP to nonces to drop `'unsafe-inline'` scripts
 
 Known trade-offs: `username_available` is callable anonymously (reveals username existence, needed for sign-up UX); avatars are in a public bucket by design; read receipts are always on for conversation members.
+
+## Added in the upgrade batch
+- Reactions: members only, own reactions only, fixed set of keys (tests).
+- Presence: visible only to yourself and connections, hidden when `show_online` is off (checked through a definer helper because settings are owner-private; regression test).
+- Invite links: 128-bit random tokens, visible only to moderators+, expiry + use limits + revoke, blocked users can't join (tests).
+- Reports: write-only via RPC, reporter sees only their own, rate-limited, message reports require membership (tests).

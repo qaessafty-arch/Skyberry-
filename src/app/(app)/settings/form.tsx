@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
-import { Award, Bell, Camera, Flame, Gamepad2, Lock, MessageCircle, MessagesSquare, ShieldOff, Sparkles, Trash2, UserPlus, Users, type LucideIcon } from "lucide-react";
+import { Activity, Award, Bell, Camera, Flame, Gamepad2, Lock, MessageCircle, MessagesSquare, ShieldOff, Sparkles, Trash2, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { Submit } from "@/components/form-bits";
 import { ErrorNote, OkNote } from "@/components/ui";
@@ -49,6 +49,7 @@ export function SettingsForm({ s }: { s: UserSettings }) {
             <option value="everyone">Everyone</option><option value="friends">Connections only</option>
           </select>
         </Row>
+        <Row icon={Activity} label="Show when I'm online" hint="Connections see a green dot while you're active"><Toggle name="show_online" label="Show when I'm online" on={s.show_online ?? true} /></Row>
       </Group>
 
       <Group title="Notifications" description="Skyberry only notifies you about the things you choose.">

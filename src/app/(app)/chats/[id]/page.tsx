@@ -5,7 +5,7 @@ import { Avatar } from "@/components/avatar";
 import { ActionButton } from "@/components/action-button";
 import { joinRoom } from "@/features/actions";
 import { requireUser } from "@/lib/auth";
-import { signMedia } from "@/lib/queries";
+import { onlineSet, signMedia } from "@/lib/queries";
 import type { Message } from "@/lib/types";
 import { ChatThread, type MemberInfo, type MediaInfo } from "./thread";
 
@@ -47,6 +47,9 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: false }).limit(50);
   const messages = ((msgs ?? []) as Message[]).reverse();
   const mediaIds = messages.map((m) => m.media_id).filter(Boolean) as string[];
+  const { data: rx } = messages.length
+    ? await supabase.from("message_reactions").select("message_id, user_id, emoji").in("message_id", messages.map((m) => m.id))
+    : { data: [] };
   const media: Record<string, MediaInfo> = {};
   if (mediaIds.length) {
     const { data: assets } = await supabase.from("media_assets").select("id, path, kind").in("id", mediaIds);
@@ -54,6 +57,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     for (const a of assets ?? []) { const url = urls.get(a.path); if (url) media[a.id] = { url, kind: a.kind }; }
   }
   const other = conv.kind === "direct" ? Object.values(members).find((m) => m.id !== user.id) : undefined;
+  const otherOnline = other ? (await onlineSet(supabase, [other.id])).has(other.id) : false;
   const title = conv.kind === "direct" ? other?.name ?? "Chat" : conv.title;
 
   return (
@@ -62,10 +66,10 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         <Link href="/chats" aria-label="Back to chats" className="icon-btn"><ArrowLeft aria-hidden size={20} /></Link>
         <Link href={conv.kind === "direct" && other ? `/u/${other.username}` : `/chats/${id}/settings`} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 transition-colors hover:bg-white/60"
           aria-label={conv.kind === "direct" ? `View ${title}'s profile` : "Group details"}>
-          <Avatar name={title ?? "Chat"} path={conv.kind === "direct" ? other?.avatar : conv.avatar_path} accent={other?.accent} size={40} />
+          <Avatar name={title ?? "Chat"} path={conv.kind === "direct" ? other?.avatar : conv.avatar_path} accent={other?.accent} size={40} online={otherOnline} />
           <span className="min-w-0">
             <span className="block truncate text-[16px] font-extrabold">{title}</span>
-            <span className="block truncate text-[13px] text-faint">{conv.kind === "direct" ? `@${other?.username ?? ""}` : `${conv.member_count} members · ${conv.kind === "room" ? "Room" : "Group"}`}</span>
+            <span className="block truncate text-[13px] text-faint">{conv.kind === "direct" ? (otherOnline ? "Online now" : `@${other?.username ?? ""}`) : `${conv.member_count} members · ${conv.kind === "room" ? "Room" : "Group"}`}</span>
           </span>
         </Link>
         {conv.kind === "direct" && other ? (
@@ -74,7 +78,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
           <Link href={`/chats/${id}/settings`} aria-label="Group settings" className="icon-btn"><Settings aria-hidden size={20} /></Link>
         )}
       </header>
-      <ChatThread conversationId={id} meId={user.id} kind={conv.kind} myRole={mine.role as string} members={members} initial={messages} initialMedia={media} />
+      <ChatThread conversationId={id} meId={user.id} kind={conv.kind} myRole={mine.role as string} members={members} initial={messages} initialMedia={media} initialReactions={(rx ?? []) as { message_id: string; user_id: string; emoji: string }[]} />
     </div>
   );
 }

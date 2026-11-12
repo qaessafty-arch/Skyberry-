@@ -150,7 +150,7 @@ export async function updateSettings(_: ActionState, form: FormData): Promise<Ac
     who_can_message: form.get("who_can_message"),
     notify_messages: bool("notify_messages"), notify_connections: bool("notify_connections"), notify_rooms: bool("notify_rooms"),
     notify_games: bool("notify_games"), notify_moments: bool("notify_moments"), notify_milestones: bool("notify_milestones"),
-    streaks_enabled: bool("streaks_enabled"), show_streaks: bool("show_streaks"), reduce_motion: bool("reduce_motion"),
+    streaks_enabled: bool("streaks_enabled"), show_streaks: bool("show_streaks"), reduce_motion: bool("reduce_motion"), show_online: bool("show_online"),
   });
   if (!parsed.success) return { error: "Invalid settings" };
   const supabase = await createClient();
@@ -195,6 +195,52 @@ export async function setAccessory(accessory: string | null) {
   const { error } = await supabase.from("pets").update({ accessory: a.data }).eq("owner_id", u.user.id);
   if (error) return { ok: false, error: /Reach level/.test(error.message) ? error.message : "Couldn't update the accessory." } as Result;
   revalidatePath("/universe");
+  return { ok: true } as Result;
+}
+export async function finishWelcome(displayName: string, petName: string) {
+  const supabase = await createClient();
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return { ok: false, error: "Please log in" } as Result;
+  const dn = z.string().trim().min(1, "Tell us what to call you").max(48).safeParse(displayName);
+  const pn = z.string().trim().min(1, "Give Pip a name").max(24).safeParse(petName);
+  if (!dn.success) return { ok: false, error: dn.error.issues[0]!.message } as Result;
+  if (!pn.success) return { ok: false, error: pn.error.issues[0]!.message } as Result;
+  await supabase.rpc("ensure_universe");
+  const [a, b] = await Promise.all([
+    supabase.from("profiles").update({ display_name: dn.data }).eq("id", u.user.id),
+    supabase.from("pets").update({ name: pn.data }).eq("owner_id", u.user.id),
+  ]);
+  if (a.error || b.error) return { ok: false, error: "Couldn't save. Please try again." } as Result;
+  await supabase.rpc("complete_onboarding");
+  revalidatePath("/", "layout");
+  return { ok: true } as Result;
+}
+export async function skipWelcome() {
+  const supabase = await createClient();
+  await supabase.rpc("complete_onboarding");
+  redirect("/home");
+}
+export async function createInviteLink(conv: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_invite_link", { p_conv: id(conv), p_days: 7, p_max_uses: 25 });
+  if (error) return { ok: false, error: friendly(error.message) } as Result & { token?: string };
+  revalidatePath(`/chats/${conv}/settings`);
+  return { ok: true, token: data as string };
+}
+export const revokeInviteLink = async (conv: string, token: string) =>
+  call("revoke_invite_link", { p_token: z.string().regex(/^[0-9a-f]{32}$/).parse(token) }, [`/chats/${conv}/settings`]);
+export async function joinByLink(token: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("join_by_link", { p_token: z.string().regex(/^[0-9a-f]{32}$/).parse(token) });
+  if (error) return { ok: false, error: /no longer valid/.test(error.message) ? "This invite link is no longer valid." : "Couldn't join with this link." } as Result;
+  redirect(`/chats/${data}`);
+}
+export async function reportUser(target: string, reason: string) {
+  const supabase = await createClient();
+  const r = z.enum(["spam", "harassment", "inappropriate", "impersonation", "other"]).safeParse(reason);
+  if (!r.success) return { ok: false, error: "Choose a reason" } as Result;
+  const { error } = await supabase.rpc("submit_report", { p_target_user: id(target), p_message: null, p_reason: r.data, p_details: "" });
+  if (error) return { ok: false, error: /too many/.test(error.message) ? "You've sent a lot of reports. Try again later." : "Couldn't send the report." } as Result;
   return { ok: true } as Result;
 }
 export async function startGame(friendId: string) {

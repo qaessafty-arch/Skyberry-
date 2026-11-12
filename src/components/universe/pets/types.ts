@@ -13,4 +13,6 @@ export type PetProps = {
   reduceMotion: boolean;
   quality: "high" | "low";
   onTap?: () => void;
+  /** Preview only: hold an idle variation (pet lab). */
+  forceIdle?: "none" | "sit" | "stretch" | "yawn";
 };

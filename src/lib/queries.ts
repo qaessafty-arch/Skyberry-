@@ -22,6 +22,15 @@ export async function friendsOf(supabase: SupabaseClient, me: string) {
   return ids.map((i) => map.get(i)).filter(Boolean) as MiniProfile[];
 }
 
+/** Ids (of those given) that were active in the last 2 minutes. RLS hides users who opted out or aren't connections. */
+export async function onlineSet(supabase: SupabaseClient, ids: string[]) {
+  const unique = [...new Set(ids)].filter(Boolean);
+  if (!unique.length) return new Set<string>();
+  const since = new Date(Date.now() - 120_000).toISOString();
+  const { data } = await supabase.from("presence").select("user_id").in("user_id", unique).gt("last_seen_at", since);
+  return new Set((data ?? []).map((r) => r.user_id as string));
+}
+
 /** Signed URLs (1h) for private media. RLS on storage decides what the caller can sign. */
 export async function signMedia(supabase: SupabaseClient, paths: string[]) {
   const out = new Map<string, string>();

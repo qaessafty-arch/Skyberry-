@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/env";
 
-const PROTECTED = ["/home", "/chats", "/rooms", "/camera", "/gallery", "/saved", "/notifications", "/search", "/universe", "/games", "/profile", "/settings", "/u"];
+const PROTECTED = ["/home", "/chats", "/rooms", "/camera", "/gallery", "/saved", "/notifications", "/search", "/universe", "/games", "/profile", "/settings", "/u", "/welcome", "/join"];
 const AUTH_PAGES = ["/login", "/register", "/forgot-password"];
 
 const matches = (path: string, list: string[]) => list.some((p) => path === p || path.startsWith(p + "/"));

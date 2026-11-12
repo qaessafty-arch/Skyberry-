@@ -50,6 +50,7 @@ export const settingsSchema = z.object({
   streaks_enabled: z.boolean(),
   show_streaks: z.boolean(),
   reduce_motion: z.boolean(),
+  show_online: z.boolean(),
 });
 
 /** Escapes LIKE wildcards so user input is matched literally. */
