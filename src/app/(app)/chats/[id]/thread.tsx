@@ -51,7 +51,7 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
   const newestAt = useRef<string>(initial[initial.length - 1]?.created_at ?? new Date(0).toISOString());
   useEffect(() => { const last = messages[messages.length - 1]; if (last && last.created_at > newestAt.current) newestAt.current = last.created_at; }, [messages]);
 
-  const markRead = useCallback(() => { void supabase.rpc("mark_conversation_read", { p_conv: conversationId }); }, [supabase, conversationId]);
+  const markRead = useCallback(() => { void supabase.rpc("mark_conversation_read", { p_conv: conversationId }).then(() => undefined); }, [supabase, conversationId]);
 
   const loadMedia = useCallback(async (m: Message) => {
     if (!m.media_id) return;
@@ -235,7 +235,7 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
                     {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
                   </>
                 )}
-                <p className={`mt-0.5 flex items-center justify-end gap-1 text-[11px] ${mine ? "text-white/85" : "text-faint"}`}>
+                <p className={`mt-0.5 flex items-center justify-end gap-1 text-[11px] ${mine ? "text-white" : "text-faint"}`}>
                   {timeAgo(m.created_at)}{m.edited_at && !m.deleted_at ? " · edited" : ""}
                   {mine && !m.deleted_at && (seenBy(m) ? <CheckCheck aria-label="Seen" size={13} /> : <Check aria-label="Sent" size={13} />)}
                 </p>
@@ -308,7 +308,7 @@ export function ChatThread({ conversationId, meId, kind, myRole, members, initia
       )}
       <form onSubmit={submit} className="glass flex items-end gap-1.5 rounded-[22px] p-1.5">
         <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" className="sr-only" id="chat-file" onChange={(e) => void onFile(e.target.files?.[0])} />
-        <label htmlFor="chat-file" className="icon-btn shrink-0 cursor-pointer" aria-label="Attach photo or video"><ImagePlus aria-hidden size={21} strokeWidth={1.9} /></label>
+        <label htmlFor="chat-file" className="icon-btn shrink-0 cursor-pointer"><ImagePlus aria-hidden size={21} strokeWidth={1.9} /><span className="sr-only">Attach photo or video</span></label>
         <label htmlFor="msg" className="sr-only">Message</label>
         <textarea id="msg" value={text} onChange={(e) => onType(e.target.value)} rows={1} maxLength={4000} placeholder={editing ? "Edit your message" : "Write a message"}
           className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1 py-2.5 text-[15px] text-ink outline-none placeholder:text-faint"

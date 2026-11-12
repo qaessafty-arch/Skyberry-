@@ -62,7 +62,7 @@ async function HomeBody() {
     supabase.from("pets").select("name, xp, last_cared_at").eq("owner_id", user.id).maybeSingle(),
     supabase.rpc("moment_feed"),
   ]);
-  if (!pet) void supabase.rpc("ensure_universe"); // first visit: create space + pet in the background
+  if (!pet) await supabase.rpc("ensure_universe"); // first visit: create space + pet before rendering
   const all = (convs ?? []) as ConversationRow[];
   const conversations = all.slice(0, 5);
   const unreadTotal = all.reduce((n, c) => n + Number(c.unread_count), 0);

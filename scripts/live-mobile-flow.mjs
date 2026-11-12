@@ -19,15 +19,18 @@ async function user(name) {
   await p.goto(BASE + "/login");
   await p.getByLabel("Email").fill(creds[name].email); await p.getByLabel("Password").fill(creds[name].password);
   await p.getByRole("button", { name: "Log in" }).click(); await p.waitForURL(/\/(home|welcome)/, { timeout: 20000 });
+  await p.waitForLoadState("networkidle").catch(() => {});
   if (p.url().includes("/welcome")) { // brand-new accounts go through the welcome flow once
     await p.getByRole("button", { name: /Continue/ }).click();
     await p.getByLabel("Name your companion").fill("Pip");
     await p.getByRole("button", { name: /Continue/ }).click();
     await p.getByRole("button", { name: /^Finish/ }).click();
-    await p.waitForURL(/\/home/, { timeout: 20000 });
+    await p.waitForURL(/\/home/, { timeout: 20000 }); await p.getByText("Recent chats").waitFor();
   }
   return p;
 }
+/** The message row that holds this text: scopes action buttons to one message (only the selected one is clickable on mobile). */
+function rowOf(p, text) { return p.getByText(text).locator("xpath=ancestor::*[.//button[@aria-label='Add reaction']][1]"); }
 async function step(name, fn) { try { const n = await fn(); log(true, name, n ?? ""); } catch (e) { log(false, name, String(e.message).split("\n")[0].slice(0, 220)); } }
 async function shot(p, file) {
   await p.waitForTimeout(700);
@@ -66,13 +69,14 @@ await step("alice sends a photo (server validation + private storage + signed UR
 });
 await step("chats list shows the conversation", async () => { await A.goto(BASE + "/chats"); await A.getByText("Bob Berry").waitFor(); await shot(A, "08-chats"); });
 await step("streak started after both messaged", async () => { await A.goto(BASE + "/home"); await A.getByText("Done today").waitFor({ timeout: 8000 }); await shot(A, "09-home-streak"); });
+const ROOM = `Berry Lounge ${Date.now().toString(36)}`; // unique per run so leftovers from earlier runs never collide
 await step("alice creates a public room", async () => {
-  await A.goto(BASE + "/rooms/new"); await A.getByLabel("Room name").fill("Berry Lounge"); await A.getByLabel("Description").fill("Open hangout for testers");
+  await A.goto(BASE + "/rooms/new"); await A.getByLabel("Room name").fill(ROOM); await A.getByLabel("Description").fill("Open hangout for testers");
   await shot(A, "10-room-new"); await A.getByRole("button", { name: "Create room" }).click(); await A.waitForURL(/\/chats\//, { timeout: 15000 });
 });
 await step("bob discovers and joins the room", async () => {
-  await B.goto(BASE + "/rooms"); await B.getByRole("heading", { name: "Berry Lounge" }).waitFor(); await shot(B, "11-rooms");
-  await B.getByRole("link", { name: "View & join" }).first().click(); await B.getByRole("button", { name: "Join room" }).click();
+  await B.goto(BASE + "/rooms"); await B.getByRole("heading", { name: ROOM }).waitFor(); await shot(B, "11-rooms");
+  await B.getByRole("heading", { name: ROOM }).locator("xpath=ancestor::*[.//a[normalize-space()='View & join']][1]").getByRole("link", { name: "View & join" }).click(); await B.getByRole("button", { name: "Join room" }).click();
   await B.getByText("Bob Berry joined").waitFor({ timeout: 15000 });
 });
 await step("room settings show roles (alice owner)", async () => {
@@ -129,9 +133,9 @@ await step("accessibility: no serious/critical axe violations on signed-in scree
 });
 await step("react and reply to a message", async () => {
   await B.goto(chatUrl); await B.getByText("Hi Bob, testing Skyberry on mobile").click();
-  await B.getByRole("button", { name: "Add reaction" }).first().click(); await B.getByRole("menuitem", { name: "Love" }).click();
+  await rowOf(B, "Hi Bob, testing Skyberry on mobile").getByRole("button", { name: "Add reaction" }).click(); await B.getByRole("menuitem", { name: "Love" }).click();
   await A.goto(chatUrl); await A.getByRole("button", { name: /Love, 1/ }).waitFor({ timeout: 15000 });
-  await A.getByText("Hey Alice! Works here.").click(); await A.getByRole("button", { name: "Reply" }).first().click();
+  await A.getByText("Hey Alice! Works here.").click(); await rowOf(A, "Hey Alice! Works here.").getByRole("button", { name: "Reply" }).click();
   await A.getByLabel("Message", { exact: true }).fill("Replying to you"); await A.getByRole("button", { name: "Send message" }).click();
   await B.getByText("Replying to you").waitFor({ timeout: 15000 }); await shot(B, "24-reply-reaction");
 });
