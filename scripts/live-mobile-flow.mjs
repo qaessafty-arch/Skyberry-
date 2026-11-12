@@ -19,12 +19,13 @@ async function user(name) {
   await p.goto(BASE + "/login");
   await p.getByLabel("Email").fill(creds[name].email); await p.getByLabel("Password").fill(creds[name].password);
   await p.getByRole("button", { name: "Log in" }).click(); await p.waitForURL(/\/(home|welcome)/, { timeout: 20000 });
+  await p.waitForLoadState("networkidle").catch(() => {});
   if (p.url().includes("/welcome")) { // brand-new accounts go through the welcome flow once
     await p.getByRole("button", { name: /Continue/ }).click();
     await p.getByLabel("Name your companion").fill("Pip");
     await p.getByRole("button", { name: /Continue/ }).click();
     await p.getByRole("button", { name: /^Finish/ }).click();
-    await p.waitForURL(/\/home/, { timeout: 20000 });
+    await p.waitForURL(/\/home/, { timeout: 20000 }); await p.getByText("Recent chats").waitFor();
   }
   return p;
 }
