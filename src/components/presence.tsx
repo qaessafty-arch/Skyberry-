@@ -6,7 +6,8 @@ import { getBrowserClient } from "@/lib/supabase/client";
 export function Heartbeat() {
   useEffect(() => {
     const supabase = getBrowserClient();
-    const beat = () => { if (document.visibilityState === "visible") void supabase.rpc("heartbeat"); };
+    // PostgREST builders only send the request when awaited or .then()-ed, so `void` alone would never call it.
+    const beat = () => { if (document.visibilityState === "visible") void supabase.rpc("heartbeat").then(() => undefined); };
     beat();
     const t = setInterval(beat, 45_000);
     document.addEventListener("visibilitychange", beat);
