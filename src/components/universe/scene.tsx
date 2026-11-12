@@ -91,6 +91,8 @@ export type UniverseSceneProps = {
   reactKey: number; happyKey: number; framing?: "default" | "face";
   /** Stop rendering entirely (leaving the page, hidden tab, scrolled away). */
   paused?: boolean;
+  /** Pet lab only. */
+  forceIdle?: "none" | "sit" | "stretch" | "yawn";
   /** Software-rendered WebGL (no GPU): render only when something changes. */
   software?: boolean;
   onPickFriend: (f: OrbitFriend | null) => void; onPetTap: () => void;
@@ -127,7 +129,7 @@ export default function UniverseScene(p: UniverseSceneProps) {
       <ContactBlob />
       <Suspense fallback={null}>
         <PetRenderer species={p.species} mood={p.mood} level={p.level} accessory={p.accessory} reactKey={p.reactKey} happyKey={p.happyKey}
-          reduceMotion={still} quality={quality} onTap={p.onPetTap} />
+          reduceMotion={still} quality={quality} onTap={p.onPetTap} forceIdle={p.forceIdle} />
       </Suspense>
       {p.friends.slice(0, 12).map((f, i) => (
         <FriendWorld key={f.id} f={f} index={i} total={Math.min(p.friends.length, 12)} selected={p.selectedFriend === f.id} still={still} onPick={p.onPickFriend} />

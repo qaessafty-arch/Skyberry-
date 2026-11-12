@@ -4,6 +4,7 @@
 // live-users.json: {"alice_sky":{"email":"…","password":"…"},"bob_berry":{…}}  (never commit it)
 import { chromium } from "playwright-core";
 import fs from "node:fs";
+import AxeBuilder from "@axe-core/playwright";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000", OUT = process.env.SHOTS_DIR ?? "test-results/live-shots";
 fs.mkdirSync(OUT, { recursive: true });
 const creds = JSON.parse(fs.readFileSync(process.env.LIVE_USERS ?? "live-users.json", "utf8"));
@@ -17,7 +18,14 @@ async function user(name) {
   p.on("pageerror", (e) => errors.push(`[${name}] pageerror ${e.message.slice(0, 200)}`));
   await p.goto(BASE + "/login");
   await p.getByLabel("Email").fill(creds[name].email); await p.getByLabel("Password").fill(creds[name].password);
-  await p.getByRole("button", { name: "Log in" }).click(); await p.waitForURL(/\/home/, { timeout: 20000 });
+  await p.getByRole("button", { name: "Log in" }).click(); await p.waitForURL(/\/(home|welcome)/, { timeout: 20000 });
+  if (p.url().includes("/welcome")) { // brand-new accounts go through the welcome flow once
+    await p.getByRole("button", { name: /Continue/ }).click();
+    await p.getByLabel("Name your companion").fill("Pip");
+    await p.getByRole("button", { name: /Continue/ }).click();
+    await p.getByRole("button", { name: /^Finish/ }).click();
+    await p.waitForURL(/\/home/, { timeout: 20000 });
+  }
   return p;
 }
 async function step(name, fn) { try { const n = await fn(); log(true, name, n ?? ""); } catch (e) { log(false, name, String(e.message).split("\n")[0].slice(0, 220)); } }
@@ -110,6 +118,34 @@ await step("profile edit saves", async () => {
   await A.getByText("Profile saved").waitFor({ timeout: 10000 }); await shot(A, "22-profile");
 });
 await step("settings", async () => { await A.goto(BASE + "/settings"); await A.getByRole("heading", { name: "Settings" }).waitFor(); await shot(A, "23-settings"); });
+await step("accessibility: no serious/critical axe violations on signed-in screens", async () => {
+  const found = [];
+  for (const path of ["/home", "/chats", new URL(chatUrl).pathname, "/notifications", "/settings", "/profile", "/universe", "/games", "/rooms"]) {
+    await A.goto(BASE + path); await A.waitForTimeout(path === "/universe" ? 2500 : 600);
+    const { violations } = await new AxeBuilder({ page: A }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).exclude("canvas").analyze();
+    violations.filter((v) => v.impact === "serious" || v.impact === "critical").forEach((v) => found.push(`${path} ${v.id} (${v.nodes.length}): ${v.nodes[0]?.target}`));
+  }
+  if (found.length) throw new Error(found.slice(0, 6).join(" | "));
+});
+await step("react and reply to a message", async () => {
+  await B.goto(chatUrl); await B.getByText("Hi Bob, testing Skyberry on mobile").click();
+  await B.getByRole("button", { name: "Add reaction" }).first().click(); await B.getByRole("menuitem", { name: "Love" }).click();
+  await A.goto(chatUrl); await A.getByRole("button", { name: /Love, 1/ }).waitFor({ timeout: 15000 });
+  await A.getByText("Hey Alice! Works here.").click(); await A.getByRole("button", { name: "Reply" }).first().click();
+  await A.getByLabel("Message", { exact: true }).fill("Replying to you"); await A.getByRole("button", { name: "Send message" }).click();
+  await B.getByText("Replying to you").waitFor({ timeout: 15000 }); await shot(B, "24-reply-reaction");
+});
+await step("invite link: create, preview and join", async () => {
+  await A.goto(BASE + "/chats/new"); await A.getByLabel("Group name").fill("Link Testers");
+  await A.getByRole("button", { name: "Create group" }).click(); await A.waitForURL(/\/chats\/[0-9a-f-]{36}$/, { timeout: 15000 });
+  await A.goto(A.url() + "/settings"); await A.getByRole("button", { name: "Create link" }).click();
+  const link = await A.locator("code").first().textContent({ timeout: 15000 });
+  await B.goto(link.replace(/^https?:\/\/[^/]+/, BASE)); await shot(B, "25-join-link");
+  await B.getByRole("button", { name: /Join group/ }).click(); await B.waitForURL(/\/chats\//, { timeout: 15000 });
+});
+await step("online status visible to a connection", async () => {
+  await B.goto(BASE + "/chats"); await B.getByText("Online").first().waitFor({ state: "attached", timeout: 15000 });
+});
 await step("signed-out user is blocked from bob's chat", async () => {
   const ctx = await b.newContext(phone); const p = await ctx.newPage(); await p.goto(chatUrl); await p.waitForURL(/\/login/); await ctx.close();
 });

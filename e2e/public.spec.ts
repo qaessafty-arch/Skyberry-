@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test("landing page presents the product and links to sign-up", async ({ page }) => {
@@ -53,4 +54,26 @@ test("security headers are present", async ({ request }) => {
   const res = await request.get("/login");
   expect(res.headers()["x-frame-options"]).toBe("DENY");
   expect(res.headers()["x-content-type-options"]).toBe("nosniff");
+});
+
+for (const path of ["/", "/login", "/register", "/forgot-password", "/offline"]) {
+  test(`no serious accessibility violations on ${path}`, async ({ page }) => {
+    await page.goto(path);
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    const bad = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    expect(bad.map((v) => `${v.id}: ${v.help} (${v.nodes.length})`)).toEqual([]);
+  });
+}
+
+test("app is installable: manifest and service worker are served", async ({ request }) => {
+  const m = await request.get("/manifest.webmanifest");
+  expect(m.status()).toBe(200);
+  expect((await m.json()).display).toBe("standalone");
+  expect((await request.get("/sw.js")).status()).toBe(200);
+});
+
+test("content security policy is set", async ({ request }) => {
+  const csp = (await request.get("/login")).headers()["content-security-policy"] ?? "";
+  expect(csp).toContain("default-src 'self'");
+  expect(csp).toContain("frame-ancestors 'none'");
 });

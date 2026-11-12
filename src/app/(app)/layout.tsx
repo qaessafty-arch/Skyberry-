@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Wordmark } from "@/components/logo";
 import { BottomNav, SideNav, TopActions } from "@/components/nav";
 import { SetupNeeded } from "@/components/setup-needed";
 import { isSupabaseConfigured } from "@/lib/env";
 import { requireUser } from "@/lib/auth";
+import { Heartbeat } from "@/components/presence";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -13,8 +15,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const [{ user }, { count }, { data: settings }] = await Promise.all([
     requireUser(),
     supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null),
-    supabase.from("user_settings").select("reduce_motion").maybeSingle(),
+    supabase.from("user_settings").select("reduce_motion, onboarded_at").maybeSingle(),
   ]);
+  if (settings && !settings.onboarded_at) redirect("/welcome"); // first visit: short welcome flow
   return (
     <div className="mx-auto flex w-full max-w-[1440px]" data-reduce-motion={settings?.reduce_motion ? "true" : undefined}>
       <SideNav userId={user.id} initialUnread={count ?? 0} />
@@ -26,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <main id="main" className="px-4 pb-[calc(var(--nav-h)+40px)] pt-5 sm:px-6 md:px-10 md:pb-12 md:pt-9">{children}</main>
       </div>
       <BottomNav />
+      <Heartbeat />
     </div>
   );
 }

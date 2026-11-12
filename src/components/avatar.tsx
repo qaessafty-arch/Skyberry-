@@ -11,14 +11,24 @@ const ACCENTS: Record<string, string> = {
 };
 export const ACCENT_LABELS: Record<string, string> = { berry: "Periwinkle", sky: "Sky", mint: "Glacier", sun: "Sunrise", violet: "Lavender" };
 
-export function Avatar({ name, path, accent = "sky", size = 44, className = "", ring = false }: {
-  name: string; path?: string | null; accent?: string; size?: number; className?: string; ring?: boolean;
+export function Avatar({ name, path, accent = "sky", size = 44, className = "", ring = false, online = false }: {
+  name: string; path?: string | null; accent?: string; size?: number; className?: string; ring?: boolean; online?: boolean;
 }) {
+  if (online) {
+    const dot = Math.max(9, Math.round(size * 0.26));
+    return (
+      <span className="relative inline-flex shrink-0">
+        <Avatar name={name} path={path} accent={accent} size={size} className={className} ring={ring} />
+        <span className="absolute bottom-0 right-0 rounded-full bg-[#1fb873] ring-2 ring-white" style={{ width: dot, height: dot }} />
+        <span className="sr-only">Online</span>
+      </span>
+    );
+  }
   const url = avatarUrl(path);
   const style = { width: size, height: size, fontSize: Math.max(11, size * 0.36) };
   const ringCls = ring ? "ring-2 ring-white shadow-[0_2px_8px_rgba(35,108,150,.18)]" : "";
   if (url) {
-    return <Image src={url} alt="" width={size} height={size} unoptimized style={style}
+    return <Image src={url} alt="" width={size} height={size} sizes={`${size}px`} style={style}
       className={`shrink-0 rounded-full object-cover ${ringCls} ${className}`} />;
   }
   return (

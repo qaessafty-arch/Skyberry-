@@ -8,7 +8,7 @@ export type Profile = {
 export type UserSettings = {
   who_can_message: "everyone" | "friends"; notify_messages: boolean; notify_connections: boolean; notify_rooms: boolean;
   notify_games: boolean; notify_moments: boolean; notify_milestones: boolean; streaks_enabled: boolean;
-  show_streaks: boolean; reduce_motion: boolean;
+  show_streaks: boolean; reduce_motion: boolean; show_online: boolean;
 };
 export type ConversationRow = {
   id: string; kind: "direct" | "group" | "room"; title: string | null; avatar_path: string | null; visibility: string;

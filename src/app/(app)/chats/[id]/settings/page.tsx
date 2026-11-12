@@ -5,7 +5,7 @@ import { Avatar } from "@/components/avatar";
 import { LiveRefresh } from "@/components/live-refresh";
 import { requireUser } from "@/lib/auth";
 import { friendsOf, profilesById } from "@/lib/queries";
-import { AdminPanel, InvitePanel, LeaveButton, MemberActions } from "./panels";
+import { AdminPanel, InviteLinks, InvitePanel, LeaveButton, MemberActions } from "./panels";
 
 export const metadata = { title: "Group settings" };
 const RANK: Record<string, number> = { owner: 4, admin: 3, moderator: 2, member: 1 };
@@ -32,6 +32,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ id: s
       </header>
 
       {myRank >= 3 && <AdminPanel id={id} kind={conv.kind} title={conv.title} description={conv.description} visibility={conv.visibility} />}
+      {myRank >= 2 && <InviteLinks id={id} links={(await supabase.from("conversation_links").select("token, expires_at, max_uses, uses, revoked").eq("conversation_id", id).order("created_at", { ascending: false }).limit(5)).data ?? []} />}
       {myRank >= 2 && friends.length > 0 && <InvitePanel id={id} friends={friends.map((f) => ({ id: f.id, name: f.display_name }))} />}
 
       <section aria-labelledby="mem" className="card p-5">

@@ -6,6 +6,7 @@ import { EmptyState, PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { timeAgo } from "@/lib/format";
 import type { ConversationRow } from "@/lib/types";
+import { onlineSet } from "@/lib/queries";
 
 export const metadata = { title: "Chats" };
 const STABLE_TABLES = ["messages", "conversation_members"];
@@ -14,6 +15,7 @@ export default async function ChatsPage({ searchParams }: { searchParams: Promis
   const { q = "" } = await searchParams;
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("my_conversations");
+  const online = await onlineSet(supabase, ((data ?? []) as ConversationRow[]).map((c) => c.other_user_id ?? ""));
   const needle = q.trim().toLowerCase().slice(0, 60);
   const rows = ((data ?? []) as ConversationRow[]).filter((c) => {
     if (!needle) return true;
@@ -43,7 +45,7 @@ export default async function ChatsPage({ searchParams }: { searchParams: Promis
               <li key={c.id}>
                 <Link href={`/chats/${c.id}`} className="flex items-center gap-3 rounded-[16px] px-3 py-3 transition-colors hover:bg-surface2">
                   <span className="relative">
-                    <Avatar name={name} path={c.kind === "direct" ? c.other_avatar_path : c.avatar_path} size={50} />
+                    <Avatar name={name} path={c.kind === "direct" ? c.other_avatar_path : c.avatar_path} size={50} online={c.kind === "direct" && online.has(c.other_user_id ?? "")} />
                     {c.kind !== "direct" && <span className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-white text-brandt ring-1 ring-line"><Users aria-label={c.kind === "room" ? "Room" : "Group"} size={11} /></span>}
                   </span>
                   <span className="min-w-0 flex-1">

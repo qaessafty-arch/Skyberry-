@@ -16,8 +16,10 @@ const damp = THREE.MathUtils.damp;
 const BODY_Y = 0.5;
 
 type Mode = "idle" | "attention" | "happy" | "sleepy" | "react";
+/** Occasional idle behaviours that make Pip feel alive without constant motion. */
+export type IdleVariation = "none" | "sit" | "stretch" | "yawn";
 
-export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMotion, quality, onTap }: PetProps) {
+export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMotion, quality, onTap, forceIdle }: PetProps) {
   const shells = quality === "high" ? 20 : 12;
   const assets = useMemo(() => {
     const noise = furNoiseTexture();
@@ -63,7 +65,8 @@ export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMot
   const invalidate = useThree((st) => st.invalidate);
   const brain = useRef({ mode: (mood === "sleepy" ? "sleepy" : "idle") as Mode, until: 0, nextBlink: 1.5, blink: 0, earTwitch: 0, nextTwitch: 3,
     look: new THREE.Vector2(), lastPointer: -10, pointer: new THREE.Vector2(), tapPoint: new THREE.Vector3(), hop: 0,
-    s: { bodyY: BODY_Y, neckX: 0, headY: 0, headX: 0, headZ: 0, ears: 0, lids: 0, wagAmp: 0.08, wagFreq: 1.1, curl: 0, tuck: 0, breath: 0 } });
+    s: { bodyY: BODY_Y, neckX: 0, headY: 0, headX: 0, headZ: 0, ears: 0, lids: 0, wagAmp: 0.08, wagFreq: 1.1, curl: 0, tuck: 0, breath: 0, tilt: 0, sit: 0, bow: 0 },
+    idleVar: "none" as IdleVariation, idleUntil: 0, nextIdleVar: 12 });
   const tailCurve = useMemo(() => new THREE.CatmullRomCurve3([0, 1, 2, 3, 4].map(() => new THREE.Vector3())), []);
 
   // external events → behaviour
@@ -84,7 +87,7 @@ export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMot
     const mode: Mode = b.mode === "idle" && attentive ? "attention" : b.mode;
 
     // targets per mode
-    const tg = { bodyY: BODY_Y, neckX: 0.05, headY: 0, headX: 0, headZ: 0, ears: 0, lids: 0, wagAmp: 0.08, wagFreq: 1.1, curl: 0, tuck: 0 };
+    const tg = { bodyY: BODY_Y, neckX: 0.05, headY: 0, headX: 0, headZ: 0, ears: 0, lids: 0, wagAmp: 0.08, wagFreq: 1.1, curl: 0, tuck: 0, tilt: 0, sit: 0, bow: 0 };
     const drift = reduceMotion ? 0 : 1;
     tg.headY = 0.18 * Math.sin(t * 0.37) * drift; // gentle idle look-around
     tg.headX = 0.06 * Math.sin(t * 0.23 + 1) * drift;
@@ -98,6 +101,23 @@ export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMot
       tg.ears = 1; tg.wagAmp = 0.3; tg.wagFreq = 4; tg.headZ = 0.22; tg.headY = 0.25; tg.neckX = -0.08;
     } else if (mode === "sleepy") {
       tg.bodyY = 0.27; tg.neckX = 0.62; tg.headY = 0.35; tg.headZ = 0.18; tg.ears = -0.9; tg.lids = 1; tg.wagAmp = 0.02; tg.wagFreq = 0.4; tg.curl = 1; tg.tuck = 1;
+    }
+
+    // occasional idle variations (only in calm idle; never under reduced motion)
+    if (forceIdle) { b.idleVar = forceIdle; b.idleUntil = now + 1; }
+    else if (mode !== "idle" || reduceMotion) b.idleVar = "none";
+    else if (b.idleVar !== "none" && now > b.idleUntil) { b.idleVar = "none"; b.nextIdleVar = now + 15 + Math.random() * 10; }
+    else if (b.idleVar === "none" && now > b.nextIdleVar) {
+      const pick: IdleVariation[] = ["sit", "stretch", "yawn"];
+      b.idleVar = pick[Math.floor(Math.random() * pick.length)]!;
+      b.idleUntil = now + (b.idleVar === "sit" ? 5 : b.idleVar === "stretch" ? 2.6 : 2.2);
+    }
+    if ((mode === "idle" || forceIdle) && b.idleVar === "sit") {
+      tg.sit = 1; tg.tilt = -0.42; tg.bodyY = BODY_Y - 0.02; tg.neckX = -0.18; tg.wagAmp = 0.05; tg.curl = 0.25;
+    } else if ((mode === "idle" || forceIdle) && b.idleVar === "stretch") {
+      tg.bow = 1; tg.tilt = 0.3; tg.bodyY = BODY_Y - 0.07; tg.neckX = -0.25; tg.ears = 0.6; tg.wagAmp = 0.22; tg.wagFreq = 2.4;
+    } else if ((mode === "idle" || forceIdle) && b.idleVar === "yawn") {
+      tg.neckX = -0.42; tg.headX = -0.12; tg.lids = 0.75; tg.ears = -0.25;
     }
 
     // springs (frame-rate independent)
@@ -119,6 +139,7 @@ export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMot
     if (body.current) {
       const hop = Math.sin(Math.min(1, 1 - b.hop) * Math.PI) * 0.12 * (b.hop > 0.02 ? 1 : 0);
       body.current.position.y = s.bodyY + hop;
+      body.current.rotation.x = s.tilt;
       body.current.scale.set(1 + breath * 0.012, 1 + breath * 0.018, 1);
     }
     if (neck.current) neck.current.rotation.x = s.neckX;
@@ -138,7 +159,9 @@ export function CloudFox({ mood, level, accessory, reactKey, happyKey, reduceMot
     legs.forEach((l, i) => {
       if (!l.current) return;
       const front = i < 2;
-      l.current.rotation.x = s.tuck * (front ? -1.35 : 1.25);
+      // lying (tuck) · sitting (hind legs fold, front legs stay vertical) · play bow (front legs reach forward)
+      l.current.rotation.x = s.tuck * (front ? -1.35 : 1.25)
+        + (front ? -s.tilt * 1 : 0) + (!front ? s.sit * 1.15 - s.tilt * 0.35 : 0) + (front ? -s.bow * 0.75 : -s.bow * 0.05);
       l.current.scale.y = 1 - s.tuck * 0.35;
     });
 

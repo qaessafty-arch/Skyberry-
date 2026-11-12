@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ChevronRight, Flame, Gamepad2, Images, MessageCircle, Orbit, Plus, Star, UserPlus, Users } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { Avatar } from "@/components/avatar";
@@ -6,7 +7,7 @@ import { EmptyState, Section } from "@/components/ui";
 import { respondRequest } from "@/features/actions";
 import { requireUser } from "@/lib/auth";
 import { timeAgo } from "@/lib/format";
-import { profilesById } from "@/lib/queries";
+import { onlineSet, profilesById } from "@/lib/queries";
 import { levelProgress, petMood } from "@/lib/universe";
 import type { ConversationRow, Streak } from "@/lib/types";
 
@@ -19,8 +20,41 @@ const SHORTCUTS = [
   { href: "/gallery", label: "Gallery", Icon: Images },
 ];
 
+/** Greeting renders immediately; everything that needs data streams in below it. */
 export default async function HomePage() {
-  const { supabase, user, profile } = await requireUser();
+  const { profile } = await requireUser();
+  const hour = new Date().getUTCHours();
+  const greeting = hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  return (
+    <div className="mx-auto grid max-w-5xl gap-5 rise">
+      <header className="flex items-center gap-3">
+        <Link href="/profile" aria-label="Your profile"><Avatar name={profile.display_name} path={profile.avatar_path} accent={profile.accent} size={48} ring /></Link>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-dim">{greeting}</p>
+          <h1 className="truncate text-[26px] font-extrabold leading-tight md:text-[30px]">{profile.display_name}</h1>
+        </div>
+      </header>
+      <Suspense fallback={<HomeSkeleton />}>
+        <HomeBody />
+      </Suspense>
+    </div>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <div className="grid gap-5" role="status" aria-label="Loading">
+      <div className="flex gap-4">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton size-16 !rounded-full" />)}</div>
+      <div className="grid gap-5 md:grid-cols-[1.45fr_1fr]">
+        <div className="card grid gap-3 p-5">{[0, 1, 2].map((i) => <div key={i} className="flex items-center gap-3"><div className="skeleton size-11 !rounded-full" /><div className="grid flex-1 gap-2"><div className="skeleton h-3.5 w-1/3" /><div className="skeleton h-3 w-2/3" /></div></div>)}</div>
+        <div className="skeleton h-44 !rounded-[24px]" />
+      </div>
+    </div>
+  );
+}
+
+async function HomeBody() {
+  const { supabase, user } = await requireUser();
   const [{ data: convs }, { data: streaks }, { data: requests }, { data: pet }, { data: moments }] = await Promise.all([
     supabase.rpc("my_conversations"),
     supabase.rpc("my_streaks"),
@@ -33,23 +67,17 @@ export default async function HomePage() {
   const conversations = all.slice(0, 5);
   const unreadTotal = all.reduce((n, c) => n + Number(c.unread_count), 0);
   const feed = (moments ?? []) as { author_id: string; viewed: boolean }[];
-  const people = await profilesById(supabase, [...(requests ?? []).map((r) => r.requester_id as string), ...feed.map((m) => m.author_id)]);
+  const [online, people] = await Promise.all([
+    onlineSet(supabase, all.map((c) => c.other_user_id ?? "")),
+    profilesById(supabase, [...(requests ?? []).map((r) => r.requester_id as string), ...feed.map((m) => m.author_id)]),
+  ]);
   const authors = [...new Map(feed.map((m) => [m.author_id, m])).values()];
   const myStreaks = (streaks ?? []) as Streak[];
-  const hour = new Date().getUTCHours();
-  const greeting = hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const lp = levelProgress(pet?.xp ?? 0);
   const mood = petMood(pet?.last_cared_at ?? null);
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-5 rise">
-      <header className="flex items-center gap-3">
-        <Link href="/profile" aria-label="Your profile"><Avatar name={profile.display_name} path={profile.avatar_path} accent={profile.accent} size={48} ring /></Link>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-dim">{greeting}</p>
-          <h1 className="truncate text-[26px] font-extrabold leading-tight md:text-[30px]">{profile.display_name}</h1>
-        </div>
-      </header>
+    <div className="grid gap-5">
 
       <section aria-label="Moments" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <ul className="flex gap-4 pb-1">
@@ -112,7 +140,7 @@ export default async function HomePage() {
                 return (
                   <li key={c.id}>
                     <Link href={`/chats/${c.id}`} className="flex items-center gap-3 rounded-2xl px-2 py-2.5 transition-colors hover:bg-surface2">
-                      <Avatar name={name} path={c.kind === "direct" ? c.other_avatar_path : c.avatar_path} size={44} />
+                      <Avatar name={name} path={c.kind === "direct" ? c.other_avatar_path : c.avatar_path} size={44} online={c.kind === "direct" && online.has(c.other_user_id ?? "")} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-bold">{name}</span>
                         <span className={`block truncate text-sm ${unread ? "font-semibold text-ink" : "text-faint"}`}>{c.last_preview ?? "No messages yet"}</span>

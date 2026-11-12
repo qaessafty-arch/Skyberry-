@@ -6,6 +6,8 @@ import { blockUser, openDirect, removeConnection, respondRequest, sendRequest, s
 import { requireUser } from "@/lib/auth";
 import { avatarUrl } from "@/lib/format";
 import type { Profile } from "@/lib/types";
+import { ReportUser } from "@/components/report-user";
+import { onlineSet } from "@/lib/queries";
 import { SKY_BANNER } from "@/lib/design";
 
 export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
@@ -19,13 +21,14 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
   const mine = p.id === user.id;
   const { data: conn } = mine ? { data: null } : await supabase.from("connections").select("id, requester_id, status").or(`requester_id.eq.${p.id},addressee_id.eq.${p.id}`).maybeSingle();
   const banner = avatarUrl(p.banner_path);
+  const isOnline = !mine && (await onlineSet(supabase, [p.id])).has(p.id);
 
   return (
     <div className="mx-auto max-w-2xl rise">
       <article className="card overflow-hidden">
         <div className={`h-32 bg-cover bg-center md:h-40 ${banner ? "" : SKY_BANNER}`} style={banner ? { backgroundImage: `url(${banner})` } : undefined} />
         <div className="-mt-12 px-6 pb-6">
-          <Avatar name={p.display_name} path={p.avatar_path} accent={p.accent} size={96} className="ring-4 ring-white" />
+          <Avatar name={p.display_name} path={p.avatar_path} accent={p.accent} size={96} className="ring-4 ring-white" online={isOnline} />
           <h1 className="mt-3 text-[26px] font-extrabold leading-tight">{p.display_name}</h1>
           <p className="text-faint">@{p.username} {p.visibility !== "public" && <span className="chip ml-1"><Lock aria-hidden size={12} />{p.visibility === "friends" ? "Connections only" : "Private"}</span>}</p>
           {p.status_text && <p className="mt-2 font-semibold">{p.status_text}</p>}
@@ -48,6 +51,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               </>
             )}
             {!mine && <ActionButton className="btn btn-ghost" confirm={`Block ${p.display_name}? They won't be able to find or message you.`} action={blockUser.bind(null, p.id)}><Ban aria-hidden size={16} />Block</ActionButton>}
+            {!mine && <ReportUser userId={p.id} name={p.display_name} />}
           </div>
         </div>
       </article>

@@ -359,6 +359,58 @@ select t.eq('unlocked accessory can be worn', (select accessory from pets where 
 select t.throws('unknown accessory rejected', format('update pets set accessory = ''crown'' where owner_id = %L', :bob));
 select t.eq('cannot dress someone else''s pet', t.affected(format('update pets set accessory = null where owner_id = %L', :alice)), 0::bigint);
 
+-- ── reactions ──────────────────────────────────────────────────────────────
+select t.as(:bob::uuid);
+insert into message_reactions (message_id, user_id, emoji) values (t.peek('select id from messages where body = ''hi bob''')::uuid, :bob, 'heart');
+select t.eq('member can react', t.count('select 1 from message_reactions'), 1::bigint);
+select t.throws('cannot react as someone else', format('insert into message_reactions (message_id, user_id, emoji) values (%L, %L, ''fire'')', t.peek('select id from messages where body = ''hi bob'''), :alice));
+select t.throws('unknown reaction rejected', format('insert into message_reactions (message_id, user_id, emoji) values (%L, %L, ''poop'')', t.peek('select id from messages where body = ''hi bob'''), :bob));
+select t.as(:eve::uuid);
+select t.eq('outsider cannot see reactions', t.count('select 1 from message_reactions'), 0::bigint);
+select t.throws('outsider cannot react', format('insert into message_reactions (message_id, user_id, emoji) values (%L, %L, ''fire'')', t.peek('select id from messages where body = ''hi bob'''), :eve));
+select t.eq('cannot remove others'' reactions', t.affected('delete from message_reactions'), 0::bigint);
+
+-- ── presence ───────────────────────────────────────────────────────────────
+select t.as(:alice::uuid); select heartbeat();
+select t.as(:bob::uuid);
+select t.eq('friend sees presence', t.count(format('select 1 from presence where user_id = %L', :alice)), 1::bigint);
+select t.as(:eve::uuid);
+select t.eq('stranger cannot see presence', t.count(format('select 1 from presence where user_id = %L', :alice)), 0::bigint);
+select t.as(:alice::uuid); update user_settings set show_online = false where user_id = :alice;
+select t.as(:bob::uuid);
+select t.eq('hidden online status respected', t.count(format('select 1 from presence where user_id = %L', :alice)), 0::bigint);
+select t.as(:alice::uuid); update user_settings set show_online = true where user_id = :alice;
+select t.throws('cannot write presence directly', format('insert into presence (user_id) values (%L)', :bob));
+
+-- ── invite links ───────────────────────────────────────────────────────────
+select t.as(:alice::uuid);
+select create_conversation('group', 'Link Group', '', 'private') as lg \gset
+select create_invite_link(:'lg') as tok \gset
+select t.as(:eve::uuid);
+select t.eq('valid link previews for outsiders', (select title from invite_link_preview(:'tok')), 'Link Group');
+select t.eq('outsider cannot list link tokens', t.count('select 1 from conversation_links'), 0::bigint);
+select t.throws('member (non-moderator) cannot create links', format('select create_invite_link(%L)', :'lg'));
+select join_by_link(:'tok');
+select t.eq('joining by link makes you a member', private.member_rank(:'lg', :eve), 1);
+select t.throws('regular member cannot create links', format('select create_invite_link(%L)', :'lg'));
+select t.as(:alice::uuid); select revoke_invite_link(:'tok');
+select t.as(:dave::uuid);
+select t.throws('revoked link no longer works', format('select join_by_link(%L)', :'tok'));
+select t.eq('revoked link has no preview', t.count(format('select 1 from invite_link_preview(%L)', :'tok')), 0::bigint);
+select t.throws('random token rejected', 'select join_by_link(''deadbeef'')');
+
+-- ── reports ────────────────────────────────────────────────────────────────
+select t.as(:bob::uuid);
+select submit_report(null, t.peek('select id from messages where body = ''hi bob''')::uuid, 'spam', 'test') is not null as rep \gset
+select t.eq('reporter sees own report, author auto-filled', (select target_user_id from reports limit 1), :alice::uuid);
+select t.as(:alice::uuid);
+select t.eq('others cannot read reports', t.count('select 1 from reports'), 0::bigint);
+select t.as(:eve::uuid);
+select t.throws('cannot report a message you cannot see', format('select submit_report(null, %L, ''spam'')', t.peek('select id from messages where body = ''hi bob''')));
+select t.throws('clients cannot write reports directly', format('insert into reports (reporter_id, target_user_id, reason) values (%L, %L, ''spam'')', :eve, :alice));
+select t.as(:alice::uuid);
+select t.eq('onboarding can be completed', (select complete_onboarding() is null), true);
+
 -- ── membership lifecycle (account deletion) ────────────────────────────────
 select t.admin();
 select create_conversation('room', 'Lifecycle Room', '', 'public') as lr from (select t.as(:carol::uuid)) x \gset

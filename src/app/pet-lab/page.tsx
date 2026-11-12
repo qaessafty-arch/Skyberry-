@@ -9,5 +9,5 @@ export default async function PetLabPage({ searchParams }: { searchParams: Promi
   if (process.env.NEXT_PUBLIC_ENABLE_PET_LAB !== "1") notFound();
   const q = await searchParams;
   return <PetLab mood={(q.mood as "glowing" | "content" | "sleepy") ?? "content"} level={Number(q.level ?? 1)} accessory={(q.acc as "cloud_scarf" | "star_charm") ?? null}
-    planet={q.planet ?? "berry"} theme={q.theme ?? "dusk"} quality={(q.q as "high" | "low") ?? "high"} react={q.react === "1"} framing={q.cam === "face" ? "face" : "default"} />;
+    planet={q.planet ?? "berry"} theme={q.theme ?? "dusk"} quality={(q.q as "high" | "low") ?? "high"} react={q.react === "1"} framing={q.cam === "face" ? "face" : "default"} pose={(q.pose as "sit" | "stretch" | "yawn") ?? undefined} />;
 }

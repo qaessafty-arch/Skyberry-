@@ -6,6 +6,15 @@ _Last updated: 2026-11-04 · Phases 0–9 attempted in one pass; honest status b
 
 Skyberry runs end-to-end against a **live Supabase project** (`Skyberry`, ref `acspwxeksjzvgrttkuav`, region ap-south-1, created on a second Supabase account because the first hit the free-plan limit). All 8 migrations are applied; the security advisor reports only intended items. A two-user, phone-sized (390×844) browser run passes **25/25** steps with **0 console errors**, twice in a row on fresh accounts.
 
+## Upgrade batch (2026-11-12)
+
+- **Speed:** Vercel functions moved to Mumbai (`bom1`, next to the database); local JWT verification (ES256) instead of an Auth call per page; parallel queries; Home streams (greeting first, sections after); loading skeletons; optimized avatar images; planet textures in a Web Worker; 3D pauses when leaving/hidden/off-screen, renders on demand without a GPU and steps quality down on slow devices.
+- **Social:** message replies and reactions (Lucide icons, realtime); online status for connections with an opt-out; invite links for groups/rooms (expiry, use limits, revoke); report messages and users; a three-step welcome flow for new accounts (migration 0010, 171 DB assertions).
+- **App:** installable PWA (manifest, icons, offline page, service worker that never caches private data).
+- **Pip:** idle variations (sit, play-bow stretch, yawn).
+- **Quality gates:** GitHub Actions CI (typecheck, lint, unit, DB security, build, E2E + axe accessibility); Content-Security-Policy and HSTS headers.
+- **Not done (needs you):** push notifications (needs VAPID + webhook secrets stored in Vercel), Sentry error monitoring (creating the project in your Sentry org was blocked for confirmation), an artist-made Pip (paid).
+
 ## Production (2026-11-12)
 
 Live at **https://skyberry.vercel.app** (Vercel, free plan). Production passed the two-user phone flow 26/26 with 0 console errors. Owner to-do: add `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` as sensitive Vercel variables (needed only for account deletion and the daily purge). Details: `docs/DEPLOYMENT.md`.
