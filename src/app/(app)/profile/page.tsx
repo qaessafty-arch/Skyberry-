@@ -26,12 +26,12 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto grid max-w-3xl gap-5 rise">
       <section className="card overflow-hidden !p-0">
-        <div className={`relative h-28 bg-cover bg-center md:h-40 ${banner ? "" : SKY_BANNER}`} style={banner ? { backgroundImage: `url(${banner})` } : undefined}>
+        <div className={`relative h-32 bg-cover bg-center md:h-40 ${banner ? "" : SKY_BANNER}`} style={banner ? { backgroundImage: `url(${banner})` } : undefined}>
           <div className="absolute right-3 top-3 flex gap-2"><AvatarUpload slot="banner" label="Banner" /></div>
         </div>
-        <div className="px-5 pb-5">
-          <div className="-mt-11 flex flex-wrap items-end justify-between gap-3">
-            <Avatar name={profile.display_name} path={profile.avatar_path} accent={profile.accent} size={92} className="ring-4 ring-white" />
+        <div className="px-6 pb-6">
+          <div className="-mt-12 flex flex-wrap items-end justify-between gap-3">
+            <Avatar name={profile.display_name} path={profile.avatar_path} accent={profile.accent} size={96} className="ring-4 ring-white" />
             <div className="flex gap-2"><AvatarUpload label="Photo" /><Link href={`/u/${profile.username}`} className="btn btn-soft btn-sm">Public view</Link></div>
           </div>
           <h1 className="mt-3 text-[24px] font-extrabold leading-tight">{profile.display_name}</h1>
