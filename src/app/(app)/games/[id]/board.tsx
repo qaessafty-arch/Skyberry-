@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { ActionButton } from "@/components/action-button";
 import { cancelGame, joinGame } from "@/features/actions";
-import { winningLine } from "@/lib/games";
+import { GAMES, winningLine } from "@/lib/games";
+import { DotBoxField, DropFourField, TicTacToeField } from "./fields";
 import { getBrowserClient } from "@/lib/supabase/client";
 import type { GameSession } from "@/lib/types";
 
@@ -45,6 +46,7 @@ export function Board({ initial, meId, names, invitedMe, isPlayer }: { initial: 
   const myTurn = g.status === "active" && g.turn_user === meId;
   const opp = players.find((p) => p !== meId);
   const oppName = opp ? names[opp] : Object.entries(names).find(([id]) => id !== meId)?.[1] ?? "your friend";
+  const score = g.kind === "dotbox" && opp ? { me: (g.state.boxes ?? []).filter((b) => b === myMark).length, them: (g.state.boxes ?? []).filter((b) => b && b !== myMark).length } : null;
   const stale = g.status === "active" && !myTurn && mountedAt - new Date(g.updated_at).getTime() > 24 * 36e5;
 
   let status = "";
@@ -55,15 +57,13 @@ export function Board({ initial, meId, names, invitedMe, isPlayer }: { initial: 
 
   return (
     <div className="mx-auto grid max-w-md gap-4">
-      <header><Link href="/games" className="text-sm font-bold text-brandt">← Games</Link><h1 className="text-[26px] font-extrabold leading-tight">Tic-Tac-Toe</h1>
+      <header><Link href="/games" className="text-sm font-bold text-brandt">← Games</Link><h1 className="text-[26px] font-extrabold leading-tight">{GAMES[g.kind].title}</h1>
         <p className="text-dim" role="status" aria-live="polite">{status}</p></header>
+      {score && <p className="text-sm font-bold text-dim">You {score.me} · {oppName} {score.them}</p>}
       {!online && <p className="chip !text-warm" role="status">Reconnecting… your game is safe on the server.</p>}
-      <div role="grid" aria-label="Game board" className="card grid grid-cols-3 gap-2.5 p-3">
-        {g.state.board.map((v, i) => (
-          <button key={i} role="gridcell" disabled={busy || !myTurn || v !== ""} onClick={() => void play(i)} aria-label={`Cell ${i + 1}${v ? `, ${v}` : ", empty"}`}
-            className={`grid aspect-square place-items-center rounded-[18px] border border-line bg-surface2 text-5xl font-extrabold transition-colors enabled:hover:border-sky enabled:hover:bg-white ${line?.includes(i) ? "!border-sky !bg-ice" : ""} ${v === "X" ? "text-brandt" : "text-[#4757c9]"}`}>{v}</button>
-        ))}
-      </div>
+      {g.kind === "tictactoe" && <TicTacToeField board={g.state.board} disabled={busy || !myTurn} onPlay={(i) => void play(i)} winLine={line} />}
+      {g.kind === "dropfour" && <DropFourField board={g.state.board} disabled={busy || !myTurn} onPlay={(c) => void play(c)} />}
+      {g.kind === "dotbox" && <DotBoxField board={g.state.board} boxes={g.state.boxes ?? []} disabled={busy || !myTurn} onPlay={(e) => void play(e)} />}
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <div className="flex flex-wrap gap-2">
         {g.status === "waiting" && invitedMe && <ActionButton className="btn btn-primary" action={joinGame.bind(null, g.id)}>Accept challenge</ActionButton>}

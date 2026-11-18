@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { profileSchema, settingsSchema, spaceSchema, uuidSchema, zodFieldErrors, type ActionState } from "@/lib/validation";
+import { GAME_KINDS } from "@/lib/games";
 
 type Result = { ok: boolean; error?: string };
 const fail = (e: { message: string }): Result => ({ ok: false, error: friendly(e.message) });
@@ -243,9 +244,10 @@ export async function reportUser(target: string, reason: string) {
   if (error) return { ok: false, error: /too many/.test(error.message) ? "You've sent a lot of reports. Try again later." : "Couldn't send the report." } as Result;
   return { ok: true } as Result;
 }
-export async function startGame(friendId: string) {
+export async function startGame(friendId: string, kind: string = "tictactoe") {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("create_game", { p_kind: "tictactoe", p_invitee: id(friendId) });
+  const k = z.enum(GAME_KINDS).parse(kind);
+  const { data, error } = await supabase.rpc("create_game", { p_kind: k, p_invitee: id(friendId) });
   if (error) return fail(error);
   redirect(`/games/${data}`);
 }

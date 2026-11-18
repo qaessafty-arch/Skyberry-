@@ -4,7 +4,7 @@ import { profilesById } from "@/lib/queries";
 import type { GameSession } from "@/lib/types";
 import { Board } from "./board";
 
-export const metadata = { title: "Tic-Tac-Toe" };
+export const metadata = { title: "Game" };
 
 export default async function GamePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -32,7 +32,7 @@ export type Streak = {
 };
 export type Pet = { id: string; owner_id: string; name: string; species: "berry-fox" | "cloud-whale" | "star-moth"; xp: number; last_cared_at: string | null };
 export type GameSession = {
-  id: string; kind: "tictactoe"; status: "waiting" | "active" | "finished" | "cancelled"; created_by: string;
-  state: { board: string[]; marks: Record<string, "X" | "O"> }; turn_user: string | null; winner_id: string | null;
+  id: string; kind: "tictactoe" | "dropfour" | "dotbox"; status: "waiting" | "active" | "finished" | "cancelled"; created_by: string;
+  state: { board: string[]; boxes?: string[]; marks: Record<string, "X" | "O"> }; turn_user: string | null; winner_id: string | null;
   result: "win" | "draw" | "forfeit" | null; version: number; updated_at: string;
 };

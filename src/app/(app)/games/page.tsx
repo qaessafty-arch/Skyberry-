@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Gamepad2, Grid3x3 } from "lucide-react";
+import { Gamepad2, Grid3x3, Rows3, Star, type LucideIcon } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { Avatar } from "@/components/avatar";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -7,7 +7,11 @@ import { EmptyState, PageHeader } from "@/components/ui";
 import { startGame } from "@/features/actions";
 import { requireUser } from "@/lib/auth";
 import { friendsOf, profilesById } from "@/lib/queries";
+import { GAMES, type GameKind } from "@/lib/games";
 import type { GameSession } from "@/lib/types";
+
+const ICONS: Record<GameKind, LucideIcon> = { tictactoe: Grid3x3, dropfour: Rows3, dotbox: Star };
+const GAME_LIST = (Object.keys(GAMES) as GameKind[]).map((kind) => ({ kind, Icon: ICONS[kind], ...GAMES[kind] }));
 
 export const metadata = { title: "Games" };
 
@@ -30,12 +34,14 @@ export default async function GamesPage() {
     <div className="mx-auto max-w-3xl">
       <LiveRefresh tables={["game_sessions"]} />
       <PageHeader title="Games" subtitle="Turn-based games with friends. Real-time, saved on the server, resume anytime." />
-      <section className="card mb-6 p-5" aria-labelledby="ttt">
-        <h2 id="ttt" className="mb-1 flex items-center gap-2 text-lg font-bold"><Grid3x3 aria-hidden size={18} className="text-brandt" />Tic-Tac-Toe</h2>
-        <p className="mb-3 text-sm text-dim">Challenge a connection. Winning earns your pet XP.</p>
-        {friends.length === 0 ? <p className="text-sm text-dim">Connect with a friend first. <Link href="/search" className="font-bold text-brandt">Find people</Link></p> : (
-          <ul className="flex flex-wrap gap-2">{friends.map((f) => <li key={f.id}><ActionButton action={startGame.bind(null, f.id)}><Avatar name={f.display_name} path={f.avatar_path} size={22} />{f.display_name}</ActionButton></li>)}</ul>)}
-      </section>
+      {friends.length === 0 && <p className="card mb-6 p-5 text-sm text-dim">Connect with a friend first to challenge them. <Link href="/search" className="font-bold text-brandt">Find people</Link></p>}
+      {friends.length > 0 && GAME_LIST.map(({ kind, Icon, blurb, title }) => (
+        <section key={kind} className="card mb-6 p-5" aria-labelledby={`g-${kind}`}>
+          <h2 id={`g-${kind}`} className="mb-1 flex items-center gap-2 text-lg font-bold"><Icon aria-hidden size={18} className="text-brandt" />{title}</h2>
+          <p className="mb-3 text-sm text-dim">{blurb} Winning earns your pet XP.</p>
+          <ul className="flex flex-wrap gap-2">{friends.map((f) => <li key={f.id}><ActionButton action={startGame.bind(null, f.id, kind)}><Avatar name={f.display_name} path={f.avatar_path} size={22} />{f.display_name}</ActionButton></li>)}</ul>
+        </section>
+      ))}
       <h2 className="mb-2 text-lg font-bold">Your games</h2>
       {active.length === 0 && done.length === 0 ? <EmptyState icon={Gamepad2} title="No games yet">Pick a friend above to start your first match.</EmptyState> : (
         <ul className="card divide-y divide-line overflow-hidden">
